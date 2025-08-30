@@ -3,11 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "workspaces": ["apps/*"],
+    "scripts": {
+      "dev": "concurrently \"npm:dev --workspace=web\" \"npm:dev --workspace=api\""
+    },
+    "build": "npm build",
+    "start": "npm start",
+    "lint": "npm lint"
   },
+  
   "dependencies": {
     "concurrently": "^9.2.1",
     "next": "14.2.5",
