@@ -9,7 +9,12 @@ export default defineConfig({
     host: "0.0.0.0",
     hmr: false,
     ws: false,
-    allowedHosts: 'all',
+    allowedHosts: [
+      "9dc2f6f9-a38c-4bbd-b603-2d745b10236b-00-280e8823h1ybz.janeway.replit.dev",
+      "localhost",
+      "127.0.0.1",
+      "0.0.0.0"
+    ],
     strictPort: false,
   },
   preview: {
