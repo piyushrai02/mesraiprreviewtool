@@ -1,19 +1,18 @@
 {
-  "name": "web",
-  "version": "0.1.0",
+  "name": "react-node-starter",
+  "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "workspaces": [
-      "apps/*"
-    ],
-    "scripts": {
-      "dev": "concurrently \"npm:dev --workspace=web\" \"npm:dev --workspace=api\""
-    },
-    "build": "npm build",
-    "start": "npm start",
-    "lint": "npm lint"
+    "dev": "concurrently \"npm:dev --workspace=web\" \"npm:dev --workspace=api\"",
+    "build": "npm run build --workspace=web",
+    "start": "npm start --workspace=web",
+    "lint": "npm run lint --workspace=web"
   },
   "dependencies": {
+    "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.1",
     "next": "14.2.5",
     "react": "^18",
