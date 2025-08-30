@@ -1,180 +1,221 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { 
+  ChartBarIcon, 
+  ExclamationTriangleIcon, 
+  FolderIcon, 
+  ClockIcon,
+  CheckCircleIcon
+} from '@heroicons/react/24/outline';
+import { GitBranch } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  BarChart3, 
-  Users, 
-  GitBranch, 
-  MessageSquare, 
-  TrendingUp, 
-  ArrowUpRight,
-  Calendar,
-  Filter,
-  Plus
-} from 'lucide-react';
+
+interface MetricCardProps {
+  title: string;
+  value: string;
+  change: string;
+  icon: React.ComponentType<{ className?: string }>;
+  changeType: 'positive' | 'negative' | 'neutral';
+}
+
+function MetricCard({ title, value, change, icon: Icon, changeType }: MetricCardProps) {
+  const changeColor = {
+    positive: 'text-green-400',
+    negative: 'text-red-400',
+    neutral: 'text-gray-400'
+  }[changeType];
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {title}
+        </CardTitle>
+        <Icon className="h-5 w-5 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold text-foreground">{value}</div>
+        <p className={`text-xs ${changeColor}`}>
+          {change}
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface ActivityItemProps {
+  type: 'review' | 'security' | 'repository';
+  title: string;
+  description: string;
+  time: string;
+}
+
+function ActivityItem({ type, title, description, time }: ActivityItemProps) {
+  const getIcon = () => {
+    switch (type) {
+      case 'review':
+        return <CheckCircleIcon className="h-4 w-4 text-green-400" />;
+      case 'security':
+        return <ExclamationTriangleIcon className="h-4 w-4 text-yellow-400" />;
+      case 'repository':
+        return <GitBranch className="h-4 w-4 text-blue-400" />;
+      default:
+        return <div className="h-2 w-2 bg-blue-400 rounded-full" />;
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3 py-3">
+      {getIcon()}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <span className="text-xs text-muted-foreground">{time}</span>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
-  const stats = [
+  const metrics = [
     {
-      title: 'Active Reviews',
-      value: '12',
-      description: 'Pending code reviews',
-      icon: MessageSquare,
-      trend: '+2 from yesterday',
-      change: '+16.7%',
-      positive: true
+      title: 'TOTAL REVIEWS',
+      value: '0',
+      change: '+12% from last month',
+      icon: ChartBarIcon,
+      changeType: 'positive' as const
     },
     {
-      title: 'Connected Repos',
-      value: '8',
-      description: 'GitHub repositories',
-      icon: GitBranch,
-      trend: '+1 this week',
-      change: '+12.5%',
-      positive: true
+      title: 'ISSUES FOUND',
+      value: '0',
+      change: '-5% from last month',
+      icon: ExclamationTriangleIcon,
+      changeType: 'positive' as const
     },
     {
-      title: 'Team Members',
-      value: '24',
-      description: 'Active reviewers',
-      icon: Users,
-      trend: '+3 this month',
-      change: '+14.3%',
-      positive: true
+      title: 'ACTIVE REPOSITORIES',
+      value: '0',
+      change: '+2 new this month',
+      icon: FolderIcon,
+      changeType: 'positive' as const
     },
     {
-      title: 'Review Score',
-      value: '94%',
-      description: 'Average quality score',
-      icon: BarChart3,
-      trend: '+5% improvement',
-      change: '+5.3%',
-      positive: true
+      title: 'AVG REVIEW TIME',
+      value: '0s',
+      change: '-15% faster',
+      icon: ClockIcon,
+      changeType: 'positive' as const
+    }
+  ];
+
+  const recentActivity = [
+    {
+      type: 'review' as const,
+      title: 'AI Review completed',
+      description: 'for feat/user-auth',
+      time: '2 minutes ago'
     },
+    {
+      type: 'security' as const,
+      title: 'Security issue detected',
+      description: 'in api/auth.ts',
+      time: '5 minutes ago'
+    },
+    {
+      type: 'repository' as const,
+      title: 'New repository connected',
+      description: 'mesrai/backend',
+      time: '1 hour ago'
+    }
   ];
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-6 lg:p-8" data-testid="dashboard-page">
-      {/* Modern Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-            Welcome back! 👋
-          </h1>
-          <p className="text-muted-foreground">
-            Here's what's happening with your code reviews today.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Calendar className="mr-2 h-4 w-4" />
-            Last 7 days
-          </Button>
-          <Button variant="outline" size="sm">
-            <Filter className="mr-2 h-4 w-4" />
-            Filter
-          </Button>
-          <Button size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            New Review
-          </Button>
-        </div>
-      </div>
-
-      {/* Stats Grid - Responsive */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={stat.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card className="transition-all hover:shadow-md">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {stat.title}
-                  </CardTitle>
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <TrendingUp className="mr-1 h-3 w-3 text-emerald-500" />
-                    <span className="text-emerald-500">{stat.change}</span>
-                    <span className="ml-1">{stat.description}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Dashboard Content Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Recent Activity */}
-        <Card className="col-span-1 md:col-span-2">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>
-              Your latest code review activities
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { type: 'review', repo: 'auth-service', time: '2 hours ago' },
-                { type: 'merge', repo: 'user-dashboard', time: '4 hours ago' },
-                { type: 'comment', repo: 'api-gateway', time: '6 hours ago' },
-              ].map((activity, index) => (
-                <div key={index} className="flex items-center space-x-4">
-                  <div className="w-2 h-2 bg-primary rounded-full" />
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {activity.type === 'review' && 'Review completed'}
-                      {activity.type === 'merge' && 'Pull request merged'}
-                      {activity.type === 'comment' && 'Comment added'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {activity.repo} • {activity.time}
-                    </p>
-                  </div>
-                  <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button className="w-full justify-start" variant="ghost">
-              <Plus className="mr-2 h-4 w-4" />
-              Start New Review
-            </Button>
-            <Button className="w-full justify-start" variant="ghost">
+    <div className="min-h-screen bg-background">
+      {/* Main Content */}
+      <div className="flex-1 space-y-6 p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">
+              Monitor your AI-powered code reviews and team performance
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="text-foreground border-border">
               <GitBranch className="mr-2 h-4 w-4" />
               Connect Repository
             </Button>
-            <Button className="w-full justify-start" variant="ghost">
-              <Users className="mr-2 h-4 w-4" />
-              Invite Team Member
+            <Button size="sm" className="bg-primary hover:bg-primary/90">
+              Start Review
             </Button>
-            <Button className="w-full justify-start" variant="ghost">
-              <BarChart3 className="mr-2 h-4 w-4" />
-              View Analytics
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+
+        {/* Metrics Grid */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {metrics.map((metric) => (
+            <MetricCard
+              key={metric.title}
+              title={metric.title}
+              value={metric.value}
+              change={metric.change}
+              icon={metric.icon}
+              changeType={metric.changeType}
+            />
+          ))}
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Recent PR Reviews - Takes 2 columns */}
+          <Card className="lg:col-span-2 bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground">Recent PR Reviews</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Latest pull requests awaiting AI-powered analysis
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <GitBranch className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  No Pull Requests Found
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4 max-w-md">
+                  No pull requests match your current filters or none have been created yet.
+                </p>
+                <Button variant="outline" size="sm" className="text-foreground border-border">
+                  Connect Repository
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Activity */}
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground">Recent Activity</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Latest reviews and analysis results
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="px-6">
+                {recentActivity.map((activity, index) => (
+                  <ActivityItem
+                    key={index}
+                    type={activity.type}
+                    title={activity.title}
+                    description={activity.description}
+                    time={activity.time}
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

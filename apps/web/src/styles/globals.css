@@ -4,93 +4,65 @@
 
 @layer base {
   :root {
-    /* Advanced Enterprise Theme - Modern Professional */
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Professional Dark Theme - Modern Design System */
+    --background: 210 11% 15%;
+    --foreground: 213 27% 84%;
     
-    /* Card & Surface with subtle gradients */
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Card & Surface */
+    --card: 217 19% 19%;
+    --card-foreground: 213 27% 84%;
     
-    /* Primary Brand - Professional Blue with depth */
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary Brand */
+    --primary: 217 91% 60%;
+    --primary-foreground: 213 27% 84%;
     
-    /* Secondary with modern contrast */
-    --secondary: 210 40% 98%;
-    --secondary-foreground: 222.2 84% 4.9%;
+    /* Secondary */
+    --secondary: 217 19% 27%;
+    --secondary-foreground: 213 27% 84%;
     
-    /* Muted with sophisticated grays */
-    --muted: 210 40% 98%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted */
+    --muted: 217 19% 27%;
+    --muted-foreground: 215 13% 65%;
     
-    /* Accent with modern pop */
-    --accent: 210 40% 98%;
-    --accent-foreground: 222.2 84% 4.9%;
+    /* Accent */
+    --accent: 217 19% 27%;
+    --accent-foreground: 213 27% 84%;
     
-    /* Destructive with professional red */
-    --destructive: 0 84.2% 60.2%;
+    /* Status colors */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    
-    /* Success and warning colors */
     --success: 142 71% 45%;
     --success-foreground: 210 40% 98%;
     --warning: 38 92% 50%;
-    --warning-foreground: 222.2 84% 4.9%;
+    --warning-foreground: 222 84% 5%;
     
-    /* Borders with subtle definition */
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    /* Borders */
+    --border: 217 19% 27%;
+    --input: 217 19% 27%;
+    --ring: 217 91% 60%;
     
-    /* Advanced gradient stops */
-    --gradient-start: 221.2 83.2% 53.3%;
-    --gradient-end: 262.1 83.3% 57.8%;
-    
-    /* Glass morphism variables */
-    --glass-bg: rgba(255, 255, 255, 0.1);
-    --glass-border: rgba(255, 255, 255, 0.2);
-    
-    /* Shadow system */
-    --shadow-color: 221.2 83.2% 53.3%;
-    
-    --radius: 0.75rem;
+    --radius: 0.5rem;
   }
 
   .dark {
-    /* Dark Theme - Advanced Professional */
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    
-    --destructive: 0 84.2% 60.2%;
+    /* Enhanced Dark Mode */
+    --background: 210 11% 15%;
+    --foreground: 213 27% 84%;
+    --card: 217 19% 19%;
+    --card-foreground: 213 27% 84%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 213 27% 84%;
+    --secondary: 217 19% 27%;
+    --secondary-foreground: 213 27% 84%;
+    --muted: 217 19% 27%;
+    --muted-foreground: 215 13% 65%;
+    --accent: 217 19% 27%;
+    --accent-foreground: 213 27% 84%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    
-    --success: 142 71% 45%;
-    --success-foreground: 210 40% 98%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 222.2 84% 4.9%;
-    
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 221.2 83.2% 53.3%;
-    
-    --glass-bg: rgba(0, 0, 0, 0.2);
-    --glass-border: rgba(255, 255, 255, 0.1);
+    --border: 217 19% 27%;
+    --input: 217 19% 27%;
+    --ring: 217 91% 60%;
   }
 }
 
