@@ -11,6 +11,13 @@ const routes: RouteConfig[] = [
     preload: true,
   },
   {
+    path: '/professional',
+    component: () => import('../pages/ProfessionalDashboardPage'),
+    title: 'Professional Dashboard',
+    requiresAuth: false,
+    preload: true,
+  },
+  {
     path: '/reviews',
     component: () => import('../pages/ReviewsPage'),
     title: 'Reviews',
