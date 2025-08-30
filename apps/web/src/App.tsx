@@ -1,7 +1,10 @@
 import './App.css'
+import { Router } from 'wouter'
 import { ThemeProvider } from './components/providers/ThemeProvider'
 import { AuthProvider } from './components/providers/AuthProvider'
-import DashboardPage from './app/dashboard/page'
+import { NavigationProvider } from './components/providers/NavigationProvider'
+import { AppLayout } from './components/layout/AppLayout'
+import { LazyRoute } from './components/features/navigation/LazyRoute'
 
 function App() {
   return (
@@ -11,9 +14,15 @@ function App() {
       enableSystem
       disableTransitionOnChange
     >
-      <AuthProvider>
-        <DashboardPage />
-      </AuthProvider>
+      <Router>
+        <AuthProvider>
+          <NavigationProvider>
+            <AppLayout>
+              <LazyRoute />
+            </AppLayout>
+          </NavigationProvider>
+        </AuthProvider>
+      </Router>
     </ThemeProvider>
   )
 }
