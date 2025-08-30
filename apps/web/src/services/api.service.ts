@@ -5,7 +5,7 @@
 
 import { ClientUser } from '@shared/types';
 
-const API_BASE_URL = 'http://localhost:3002/api/v1';
+const API_BASE_URL = `/api/v1`;
 
 class ApiService {
   private async request<T>(
