@@ -130,6 +130,12 @@ const routes: RouteConfig[] = [
     roles: ['admin', 'owner'],
   },
   {
+    path: '/github',
+    component: () => import('../pages/GitHubIntegrationPage'),
+    title: 'GitHub Integration',
+    requiresAuth: true,
+  },
+  {
     path: '/help',
     component: () => import('../pages/HelpPage'),
     title: 'Help & Support',

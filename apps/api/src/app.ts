@@ -5,6 +5,7 @@ import { Router } from "express";
 import jwt from "jsonwebtoken";
 import axios from "axios";
 import { PrismaClient } from "@prisma/client";
+// import githubRoutes from "./routes/github.routes.js";
 
 const app = express();
 const PORT = 3002;
@@ -224,6 +225,7 @@ authRouter.post("/logout", (req, res) => {
 });
 
 app.use("/api/v1/auth", authRouter);
+// app.use("/api/v1/github", githubRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {
