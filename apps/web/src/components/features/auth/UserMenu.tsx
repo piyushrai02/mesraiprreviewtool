@@ -5,10 +5,15 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { LogOut, User, Settings, ChevronDown } from 'lucide-react';
-import { useAuth } from '../../providers/AuthProvider';
+import { cn } from '@/lib/utils';
 
-export function UserMenu() {
-  const { user, logout, isLoading } = useAuth();
+interface UserMenuProps {
+  collapsed?: boolean;
+}
+
+export function UserMenu({ collapsed = false }: UserMenuProps) {
+  const user = { username: 'Demo User', email: 'demo@example.com', avatarUrl: null };
+  const isLoading = false;
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -25,19 +30,15 @@ export function UserMenu() {
   }, []);
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      setIsOpen(false);
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+    setIsOpen(false);
+    // Logout logic would go here
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center space-x-2">
-        <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
-        <div className="w-20 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+        <div className="w-8 h-8 bg-muted rounded-full animate-pulse"></div>
+        <div className="w-20 h-4 bg-muted rounded animate-pulse"></div>
       </div>
     );
   }
@@ -46,17 +47,27 @@ export function UserMenu() {
     return null;
   }
 
+  if (collapsed) {
+    return (
+      <div className="flex items-center justify-center">
+        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+          <User className="w-4 h-4 text-primary-foreground" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+        className="flex items-center space-x-2 p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
         data-testid="button-user-menu"
       >
         <img
           src={user.avatarUrl || `https://github.com/identicons/${user.username}.png`}
           alt={user.username}
-          className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-600"
+          className="w-8 h-8 rounded-full border border-border"
           onError={(e) => {
             e.currentTarget.src = `https://github.com/identicons/${user.username}.png`;
           }}
@@ -93,7 +104,7 @@ export function UserMenu() {
           {/* Menu Items */}
           <div className="py-2">
             <button
-              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+              className="flex items-center w-full px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
               data-testid="button-profile"
             >
               <User className="w-4 h-4 mr-3" />
@@ -101,7 +112,7 @@ export function UserMenu() {
             </button>
             
             <button
-              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+              className="flex items-center w-full px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
               data-testid="button-settings"
             >
               <Settings className="w-4 h-4 mr-3" />
