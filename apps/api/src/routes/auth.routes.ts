@@ -9,8 +9,8 @@ import {
   handleGitHubCallback,
   getMe,
   logout,
-} from '../controllers/auth.controller.js';
-import { authMiddleware } from '../middleware/auth.middleware.js';
+} from '../controllers/auth.controller';
+import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
 
