@@ -1,9 +1,9 @@
 /**
  * Theme Provider Component
- * @fileoverview Provides theme context for the application
+ * @fileoverview Stable theme context for the application
  */
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 
 type Theme = 'dark' | 'light' | 'system';
 
@@ -23,15 +23,18 @@ interface ThemeProviderProps {
 }
 
 /**
- * Simple theme provider implementation
- * Enables dark/light mode switching throughout the app
+ * Stable theme provider - prevents unnecessary re-renders
  */
 export function ThemeProvider({ 
   children, 
-  defaultTheme = 'system',
+  defaultTheme = 'light',
   ...props 
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(defaultTheme);
+  const [theme, setThemeState] = useState<Theme>(defaultTheme);
+
+  const setTheme = useCallback((newTheme: Theme) => {
+    setThemeState(newTheme);
+  }, []);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -45,8 +48,13 @@ export function ThemeProvider({
     }
   }, [theme]);
 
+  const contextValue = useCallback(() => ({
+    theme,
+    setTheme
+  }), [theme, setTheme]);
+
   return (
-    <ThemeProviderContext.Provider value={{ theme, setTheme }}>
+    <ThemeProviderContext.Provider value={contextValue()}>
       {children}
     </ThemeProviderContext.Provider>
   );
