@@ -1,10 +1,11 @@
 /**
  * Repository List Component
- * @fileoverview Container for displaying list of repositories
+ * @fileoverview CodeRabbit-inspired professional repository list
  */
 
 import { Repository } from '@mesrai/shared';
 import { RepositoryListItem } from './RepositoryListItem';
+import { Github, Plus } from 'lucide-react';
 
 interface RepositoryListProps {
   /** Array of repositories to display */
@@ -12,69 +13,54 @@ interface RepositoryListProps {
 }
 
 /**
- * Table header component for repository list
- */
-function RepositoryListHeader() {
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 py-3 border-b border-gray-200 dark:border-zinc-700">
-      <div className="col-span-2 md:col-span-1">
-        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          Repository
-        </h4>
-      </div>
-      <div>
-        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          Status
-        </h4>
-      </div>
-      <div>
-        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          PRs
-        </h4>
-      </div>
-      <div>
-        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          Health Score
-        </h4>
-      </div>
-      <div>
-        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          Last Review
-        </h4>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Professional repository list component
- * Displays repositories in a clean table-like layout with responsive design
+ * Professional repository list with CodeRabbit-style design
+ * Clean layout with proper spacing and visual hierarchy
  */
 export function RepositoryList({ repositories }: RepositoryListProps) {
   return (
-    <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700">
-      <div className="px-6 py-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Repository Overview
-        </h2>
-        
-        {/* Header */}
-        <RepositoryListHeader />
-        
-        {/* Repository items */}
-        <div className="divide-y divide-gray-200 dark:divide-zinc-700">
-          {repositories.map((repository) => (
-            <RepositoryListItem key={repository.id} repository={repository} />
-          ))}
-        </div>
-        
-        {/* Empty state */}
-        {repositories.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-gray-500 dark:text-gray-400">No repositories found</p>
+    <div className="bg-card rounded-xl border border-border overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+            <Github className="w-4 h-4 text-primary" />
           </div>
-        )}
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Repository Overview</h2>
+            <p className="text-sm text-muted-foreground">
+              Monitor code health and review activity across {repositories.length} repositories
+            </p>
+          </div>
+        </div>
+        <button className="inline-flex items-center px-3 py-2 text-sm font-medium text-primary border border-primary rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors">
+          <Plus className="w-4 h-4 mr-2" />
+          Connect Repository
+        </button>
       </div>
+      
+      {/* Repository list */}
+      <div className="divide-y divide-border">
+        {repositories.map((repository) => (
+          <RepositoryListItem key={repository.id} repository={repository} />
+        ))}
+      </div>
+      
+      {/* Empty state */}
+      {repositories.length === 0 && (
+        <div className="text-center py-12 px-6">
+          <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center mx-auto mb-4">
+            <Github className="w-6 h-6 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-medium text-foreground mb-2">No repositories connected</h3>
+          <p className="text-muted-foreground mb-4">
+            Connect your first repository to start getting AI-powered code reviews
+          </p>
+          <button className="inline-flex items-center px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors">
+            <Plus className="w-4 h-4 mr-2" />
+            Connect Repository
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 /**
  * Dashboard Page Component
- * @fileoverview Main dashboard page for Mesrai AI Review Tool
+ * @fileoverview CodeRabbit-inspired professional dashboard for Mesrai AI Review Tool
  */
 
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
@@ -9,25 +9,25 @@ import { RepositoryList } from '../../components/features/dashboard/RepositoryLi
 import { MOCK_REPOSITORIES, MOCK_DASHBOARD_STATS } from '../../lib/mock-data';
 
 /**
- * Main dashboard page component
- * Displays key statistics and repository overview in a professional layout
+ * Professional dashboard with CodeRabbit-style design
+ * Clean layout, proper spacing, and comprehensive metrics overview
  */
 export default function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
         {/* Page header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Dashboard
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Welcome back
           </h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Overview of your repositories and code review metrics
+          <p className="text-lg text-muted-foreground">
+            Here's what's happening with your code reviews today
           </p>
         </div>
 
         {/* Statistics cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {MOCK_DASHBOARD_STATS.map((stat, index) => (
             <StatCard
               key={index}
@@ -38,7 +38,7 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Repository list */}
+        {/* Repository overview */}
         <RepositoryList repositories={MOCK_REPOSITORIES} />
       </div>
     </DashboardLayout>

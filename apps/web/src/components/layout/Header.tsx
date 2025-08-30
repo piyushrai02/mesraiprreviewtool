@@ -1,11 +1,9 @@
 /**
  * Header Component
- * @fileoverview Top navigation header with search and user controls
+ * @fileoverview CodeRabbit-inspired professional header with search and controls
  */
 
-'use client';
-
-import { Search, Menu, User } from 'lucide-react';
+import { Search, Menu, Bell, User, Plus } from 'lucide-react';
 import { ThemeSwitcher } from '../ThemeSwitcher';
 
 interface HeaderProps {
@@ -14,46 +12,61 @@ interface HeaderProps {
 }
 
 /**
- * Professional header component with search and user controls
- * Responsive design with mobile menu trigger
+ * Professional header component matching CodeRabbit's clean design
+ * Features search, notifications, and user controls
  */
 export function Header({ onMenuClick }: HeaderProps) {
   return (
-    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-zinc-700">
+    <header className="bg-card border-b border-border sticky top-0 z-40">
       <div className="flex items-center justify-between h-16 px-6">
-        {/* Left side - Mobile menu button and search */}
+        {/* Left side - Mobile menu and search */}
         <div className="flex items-center flex-1">
           <button
             onClick={onMenuClick}
-            className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-zinc-700 md:hidden"
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent md:hidden transition-colors"
             aria-label="Open sidebar"
           >
-            <Menu className="h-6 w-6" />
+            <Menu className="h-5 w-5" />
           </button>
           
-          {/* Search bar */}
-          <div className="ml-4 flex-1 max-w-lg">
+          {/* Enhanced search bar */}
+          <div className="ml-4 flex-1 max-w-md">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                <Search className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               </div>
               <input
                 type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md leading-5 bg-white dark:bg-zinc-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Search repositories..."
+                className="block w-full pl-10 pr-4 py-2 bg-accent border border-input rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
+                placeholder="Search repositories, PRs, or reviews..."
               />
             </div>
           </div>
         </div>
 
-        {/* Right side - Theme switcher and user menu */}
-        <div className="flex items-center space-x-4">
+        {/* Right side - Actions and user controls */}
+        <div className="flex items-center space-x-2">
+          {/* Quick actions */}
+          <button className="inline-flex items-center px-3 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors">
+            <Plus className="h-4 w-4 mr-2" />
+            New Review
+          </button>
+          
+          {/* Notifications */}
+          <button className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors">
+            <Bell className="h-5 w-5" />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+          </button>
+          
+          {/* Theme switcher */}
           <ThemeSwitcher />
           
-          {/* User avatar/dropdown placeholder */}
+          {/* User menu */}
           <div className="relative">
-            <button className="p-2 rounded-full text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-zinc-700">
-              <User className="h-6 w-6" />
+            <button className="flex items-center space-x-2 p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors">
+              <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                <User className="h-4 w-4 text-primary-foreground" />
+              </div>
             </button>
           </div>
         </div>
