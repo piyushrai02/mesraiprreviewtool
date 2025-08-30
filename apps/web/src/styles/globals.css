@@ -80,11 +80,21 @@
   }
   
   body {
-    @apply bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100;
+    @apply bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 m-0 p-0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+  }
+  
+  html {
+    @apply m-0 p-0;
+    overflow: hidden;
+  }
+  
+  #root {
+    @apply m-0 p-0 h-screen w-screen;
   }
   
   /* Professional Typography */

@@ -21,7 +21,7 @@ export function AppHeader({ onMenuClick, title = "Dashboard", subtitle }: AppHea
   };
 
   return (
-    <header className="h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-6">
+    <header className="h-14 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-4">
       {/* Left Section */}
       <div className="flex items-center space-x-4">
         <button
