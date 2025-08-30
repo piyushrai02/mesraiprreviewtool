@@ -210,13 +210,15 @@
   }
 
   .card-glass {
-    @apply glass rounded-xl border border-border/30 shadow-elegant
+    @apply glass rounded-xl border shadow-elegant
            transition-all duration-300 ease-in-out hover:shadow-floating;
+    border-color: hsl(var(--border) / 0.3);
   }
 
   .card-gradient {
-    @apply bg-gradient-card text-card-foreground rounded-xl border border-border/50 shadow-elegant
+    @apply bg-gradient-card text-card-foreground rounded-xl border shadow-elegant
            transition-all duration-300 ease-in-out hover:shadow-floating;
+    border-color: hsl(var(--border) / 0.5);
   }
 
   /* Navigation styles */
@@ -244,7 +246,7 @@
            file:border-0 file:bg-transparent file:text-sm file:font-medium
            placeholder:text-muted-foreground
            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
-           focus-visible:border-primary/50 focus-visible:shadow-elegant
+           focus-visible:shadow-elegant
            disabled:cursor-not-allowed disabled:opacity-50;
   }
 
