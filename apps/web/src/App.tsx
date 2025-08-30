@@ -1,10 +1,17 @@
 import './App.css'
+import { ThemeProvider } from './components/providers/ThemeProvider'
+import DashboardPage from './app/dashboard/page'
 
 function App() {
   return (
-    <div className="App">
-      <h1>Welcome to the Mesrai AI Review Tool</h1>
-    </div>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <DashboardPage />
+    </ThemeProvider>
   )
 }
 
