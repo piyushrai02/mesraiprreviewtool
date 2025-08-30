@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, ChevronRight, Sparkles, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NavItem } from '@shared/index';
 import { MAIN_NAVIGATION } from '../../../config/navigation.config';
@@ -69,61 +70,159 @@ export function Sidebar({ className, collapsed = false, onToggleCollapse }: Side
   };
 
   return (
-    <aside
+    <motion.aside
+      initial={{ x: -300, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
       className={cn(
-        'flex flex-col glass border-r border-border/30 transition-all duration-500 ease-in-out backdrop-blur-xl animate-fade-in',
+        'flex flex-col relative overflow-hidden border-r border-border/30 backdrop-blur-xl',
         collapsed ? 'w-16' : 'w-72',
-        'bg-gradient-to-b from-background/95 via-background/90 to-background/95',
+        'h-full bg-gradient-to-b from-card/80 via-card/60 to-background/40',
         className
       )}
       data-testid="sidebar"
     >
-      {/* Header with gradient */}
-      <div className="p-6 border-b border-border/30 bg-gradient-primary/5">
-        <div className="flex items-center gap-4">
-          <div className="relative w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow animate-scale-in">
-            <span className="text-primary-foreground font-bold text-lg">M</span>
-            <div className="absolute inset-0 bg-white/20 rounded-xl animate-pulse opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-          </div>
-          {!collapsed && (
-            <div className="animate-slide-up">
-              <h1 className="font-bold text-lg text-gradient">Mesrai AI</h1>
-              <p className="text-sm text-muted-foreground font-medium">Review Tool</p>
-            </div>
-          )}
-        </div>
+      {/* Animated Background Effects */}
+      <div className="absolute inset-0 pointer-events-none">
+        <motion.div
+          animate={{
+            background: [
+              'radial-gradient(600px circle at 0% 0%, hsl(var(--primary) / 0.05), transparent 50%)',
+              'radial-gradient(600px circle at 100% 100%, hsl(var(--primary) / 0.1), transparent 50%)',
+              'radial-gradient(600px circle at 0% 100%, hsl(var(--primary) / 0.05), transparent 50%)'
+            ]
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0"
+        />
       </div>
 
-      {/* Navigation with advanced styling */}
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto scrollbar-hide">
-        <div className="space-y-1">
-          {MAIN_NAVIGATION.map(item => renderNavItem(item))}
+      {/* Header Section with Enhanced Animation */}
+      <motion.div 
+        className="relative p-6 border-b border-border/30"
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+      >
+        <div className="flex items-center gap-3">
+          <AnimatePresence mode="wait">
+            {!collapsed ? (
+              <motion.div
+                key="expanded"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0, rotate: 180 }}
+                transition={{ duration: 0.3 }}
+                className="flex items-center gap-3 w-full"
+              >
+                <div className="relative">
+                  <motion.div
+                    animate={{ 
+                      boxShadow: [
+                        '0 0 20px hsl(var(--primary) / 0.3)',
+                        '0 0 30px hsl(var(--primary) / 0.5)',
+                        '0 0 20px hsl(var(--primary) / 0.3)'
+                      ]
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center"
+                  >
+                    <Sparkles className="w-5 h-5 text-primary-foreground" />
+                  </motion.div>
+                </div>
+                <div className="flex-1">
+                  <motion.h1 
+                    className="font-bold text-xl text-gradient"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    Mesrai AI
+                  </motion.h1>
+                  <motion.p 
+                    className="text-sm text-muted-foreground"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    Review Tool
+                  </motion.p>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="collapsed"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0, rotate: 180 }}
+                transition={{ duration: 0.3 }}
+                className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center mx-auto"
+              >
+                <Zap className="w-5 h-5 text-primary-foreground" />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+      </motion.div>
+
+      {/* Navigation with advanced styling and animations */}
+      <nav className="relative flex-1 p-4 space-y-2 overflow-y-auto scrollbar-hide">
+        <motion.div 
+          className="space-y-1"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+        >
+          {MAIN_NAVIGATION.map((item, index) => (
+            <motion.div
+              key={item.id}
+              initial={{ x: -50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ 
+                delay: 0.6 + (index * 0.1), 
+                duration: 0.4,
+                ease: "easeOut"
+              }}
+            >
+              {renderNavItem(item)}
+            </motion.div>
+          ))}
+        </motion.div>
       </nav>
 
-      {/* User Menu with glass effect */}
-      <div className="p-4 border-t border-border/30 glass">
+      {/* User Menu with enhanced animations */}
+      <motion.div 
+        className="relative p-4 border-t border-border/30 glass"
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 1.2, duration: 0.5 }}
+      >
         <UserMenu collapsed={collapsed} />
-      </div>
+      </motion.div>
 
-      {/* Advanced Collapse Toggle */}
+      {/* Advanced Collapse Toggle with animations */}
       {onToggleCollapse && (
-        <button
+        <motion.button
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ delay: 1.4, duration: 0.4 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
           onClick={onToggleCollapse}
           className={cn(
-            'absolute -right-4 top-24 w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow hover:shadow-floating transition-all duration-300 hover:scale-110 active:scale-95',
+            'absolute -right-4 top-24 w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow hover:shadow-floating transition-all duration-300',
             'hidden lg:flex group border-2 border-white/20'
           )}
           data-testid="sidebar-toggle"
         >
-          <ChevronRight
-            className={cn(
-              'w-4 h-4 text-primary-foreground transition-transform duration-300 group-hover:scale-110',
-              collapsed ? 'rotate-0' : 'rotate-180'
-            )}
-          />
-        </button>
+          <motion.div
+            animate={{ rotate: collapsed ? 0 : 180 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ChevronRight className="w-4 h-4 text-primary-foreground" />
+          </motion.div>
+        </motion.button>
       )}
-    </aside>
+    </motion.aside>
   );
 }
