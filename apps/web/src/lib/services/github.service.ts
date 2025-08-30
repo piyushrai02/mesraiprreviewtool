@@ -175,7 +175,7 @@ class GitHubApiService {
   }
 
   /**
-   * Get dashboard statistics
+   * Get dashboard statistics - dynamically calculated from real GitHub data
    */
   async getDashboardStats(): Promise<{
     totalRepositories: number;
@@ -196,45 +196,58 @@ class GitHubApiService {
         this.getReviewSessions(),
       ]);
 
+      // Calculate dynamic statistics from real GitHub data
       const activeReviews = reviews.filter(r => 
-        ['queued', 'analyzing'].includes(r.status)
+        ['analyzing', 'queued'].includes(r.status)
       ).length;
 
       const completedReviews = reviews.filter(r => 
         ['reviewed', 'commented'].includes(r.status)
       ).length;
 
-      // Generate recent activity from repositories and reviews
-      const recentActivity = [
-        ...repositories.slice(0, 3).map(repo => ({
+      // Generate recent activity from real GitHub data
+      const recentActivity = [];
+      
+      // Add repository activities
+      repositories.slice(0, 3).forEach(repo => {
+        recentActivity.push({
           id: `repo-${repo.id}`,
           type: 'repo_connected' as const,
           repository: repo.name,
           timestamp: repo.createdAt,
-          message: `Repository ${repo.name} connected`,
-        })),
-        ...reviews.slice(0, 5).map(review => ({
+          message: `Repository ${repo.name} connected to Mesrai AI`,
+        });
+      });
+
+      // Add review activities
+      reviews.slice(0, 7).forEach(review => {
+        const repo = repositories.find(r => r.id === review.repositoryId);
+        const activityType = review.status === 'reviewed' ? 'review_completed' : 'review_started';
+        
+        recentActivity.push({
           id: `review-${review.id}`,
-          type: review.status === 'completed' ? 'review_completed' as const : 'review_started' as const,
-          repository: repositories.find(r => r.id === review.repositoryId)?.name || 'Unknown',
-          timestamp: review.completedAt || review.createdAt,
-          message: review.status === 'completed' 
-            ? `Review completed for PR #${review.pullRequestNumber}`
-            : `Review started for PR #${review.pullRequestNumber}`,
-        })),
-      ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-        .slice(0, 10);
+          type: activityType as const,
+          repository: repo?.name || 'Unknown Repository',
+          timestamp: review.completedAt || review.updatedAt,
+          message: activityType === 'review_completed' 
+            ? `AI review completed for PR #${review.pullRequestNumber}`
+            : `AI review started for PR #${review.pullRequestNumber}`,
+        });
+      });
+
+      // Sort by most recent and limit
+      recentActivity.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       return {
         totalRepositories: repositories.length,
         activeReviews,
         completedReviews,
         totalReviews: reviews.length,
-        recentActivity,
+        recentActivity: recentActivity.slice(0, 10),
       };
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
-      // Return fallback data
+      // Return empty data instead of fallback to show real connection status
       return {
         totalRepositories: 0,
         activeReviews: 0,

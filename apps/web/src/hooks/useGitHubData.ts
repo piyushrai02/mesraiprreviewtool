@@ -41,16 +41,23 @@ export function useGitHubData() {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
-      const [repositories, reviews, dashboardStats] = await Promise.all([
-        githubApiService.getRepositories(),
-        githubApiService.getReviewSessions(),
-        githubApiService.getDashboardStats(),
+      // Fetch data directly from API endpoints
+      const [repositoriesResponse, reviewsResponse, dashboardStatsResponse] = await Promise.all([
+        fetch('/api/v1/github/repositories').then(r => r.json()),
+        fetch('/api/v1/github/reviews').then(r => r.json()),
+        fetch('/api/v1/github/dashboard-stats').then(r => r.json()),
       ]);
 
       setState({
-        repositories,
-        reviews,
-        dashboardStats,
+        repositories: repositoriesResponse.data || [],
+        reviews: reviewsResponse.data || [],
+        dashboardStats: dashboardStatsResponse.data || {
+          totalRepositories: 0,
+          activeReviews: 0,
+          completedReviews: 0,
+          totalReviews: 0,
+          recentActivity: [],
+        },
         loading: false,
         error: null,
       });
@@ -77,10 +84,10 @@ export function useGitHubData() {
       }));
       
       // Refetch dashboard stats to update counters
-      const updatedStats = await githubApiService.getDashboardStats();
+      const dashboardResponse = await fetch('/api/v1/github/dashboard-stats').then(r => r.json());
       setState(prev => ({
         ...prev,
-        dashboardStats: updatedStats,
+        dashboardStats: dashboardResponse.data || prev.dashboardStats,
       }));
 
       return newReview;
