@@ -1,11 +1,10 @@
 import './App.css'
-import { Router, Route } from 'wouter'
+import { Router } from 'wouter'
 import { ThemeProvider } from './components/providers/ThemeProvider'
 import { AuthProvider } from './components/providers/AuthProvider'
 import { NavigationProvider } from './components/providers/NavigationProvider'
 import { AppLayout } from './components/layout/AppLayout'
 import { LazyRoute } from './components/features/navigation/LazyRoute'
-import { ProfessionalDashboardPage } from './pages/ProfessionalDashboardPage'
 
 function App() {
   return (
@@ -18,15 +17,9 @@ function App() {
       <Router>
         <AuthProvider>
           <NavigationProvider>
-            {/* Direct route for professional dashboard */}
-            <Route path="/professional" component={ProfessionalDashboardPage} />
-            
-            {/* Default layout for other routes */}
-            <Route path="/*">
-              <AppLayout>
-                <LazyRoute />
-              </AppLayout>
-            </Route>
+            <AppLayout>
+              <LazyRoute />
+            </AppLayout>
           </NavigationProvider>
         </AuthProvider>
       </Router>
