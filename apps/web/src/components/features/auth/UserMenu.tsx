@@ -7,20 +7,23 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, User, Settings, ChevronDown, Crown, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '../../providers/AuthProvider';
 
 interface UserMenuProps {
   collapsed?: boolean;
 }
 
 export function UserMenu({ collapsed = false }: UserMenuProps) {
-  const user = { 
-    username: 'Alex Johnson', 
-    email: 'alex@mesrai.ai', 
-    avatarUrl: null,
+  const { user, isLoading, logout } = useAuth();
+  
+  // Enhanced user display data
+  const displayUser = user ? {
+    username: user.username || 'User',
+    email: user.email || 'user@example.com',
+    avatarUrl: user.avatarUrl,
     role: 'Lead Developer',
     plan: 'Pro Plan'
-  };
-  const isLoading = false;
+  } : null;
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -38,7 +41,11 @@ export function UserMenu({ collapsed = false }: UserMenuProps) {
 
   const handleLogout = async () => {
     setIsOpen(false);
-    // Logout logic would go here
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   if (isLoading) {
@@ -50,7 +57,7 @@ export function UserMenu({ collapsed = false }: UserMenuProps) {
     );
   }
 
-  if (!user) {
+  if (!displayUser) {
     return null;
   }
 
@@ -114,14 +121,14 @@ export function UserMenu({ collapsed = false }: UserMenuProps) {
         <div className="flex-1 text-left">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-              {user.username}
+              {displayUser.username}
             </p>
             <div className="badge-primary text-xs">
-              {user.plan}
+              {displayUser.plan}
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            {user.role}
+            {displayUser.role}
           </p>
         </div>
         
@@ -133,52 +140,94 @@ export function UserMenu({ collapsed = false }: UserMenuProps) {
         </motion.div>
       </motion.button>
 
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 py-2 z-50">
-          {/* User Info */}
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
-            <p className="text-sm font-medium text-gray-900 dark:text-white">
-              {user.username}
-            </p>
-            {user.email && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {user.email}
-              </p>
-            )}
-          </div>
-
-          {/* Menu Items */}
-          <div className="py-2">
-            <button
-              className="flex items-center w-full px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-              data-testid="button-profile"
-            >
-              <User className="w-4 h-4 mr-3" />
-              Profile
-            </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="absolute top-full left-0 right-0 mt-2 bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-floating py-2 z-50 overflow-hidden"
+          >
+            {/* Enhanced background with gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-background/80 via-card/90 to-background/80" />
             
-            <button
-              className="flex items-center w-full px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-              data-testid="button-settings"
-            >
-              <Settings className="w-4 h-4 mr-3" />
-              Settings
-            </button>
-          </div>
+            {/* Header with enhanced user info */}
+            <div className="relative px-4 py-3 border-b border-border/30 bg-gradient-primary/5">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center shadow-glow">
+                  <Crown className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {displayUser.username}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {displayUser.email}
+                  </p>
+                </div>
+                <div className="ml-auto badge-success text-xs">
+                  {displayUser.plan}
+                </div>
+              </div>
+            </div>
+            
+            {/* Menu items with animations */}
+            <div className="relative py-2">
+              <motion.button
+                onClick={() => setIsOpen(false)}
+                className="flex items-center w-full px-4 py-3 text-sm text-foreground hover:bg-accent/50 transition-colors group"
+                data-testid="button-profile"
+                whileHover={{ x: 4 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <User className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-primary" />
+                </motion.div>
+                Profile Settings
+              </motion.button>
+              
+              <motion.button
+                onClick={() => setIsOpen(false)}
+                className="flex items-center w-full px-4 py-3 text-sm text-foreground hover:bg-accent/50 transition-colors group"
+                data-testid="button-settings"
+                whileHover={{ x: 4 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <motion.div
+                  whileHover={{ rotate: 90 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Settings className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-primary" />
+                </motion.div>
+                Account Settings
+              </motion.button>
+            </div>
 
-          {/* Logout */}
-          <div className="border-t border-gray-200 dark:border-slate-700 py-2">
-            <button
-              onClick={handleLogout}
-              className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-              data-testid="button-logout"
-            >
-              <LogOut className="w-4 h-4 mr-3" />
-              Sign out
-            </button>
-          </div>
-        </div>
-      )}
+            {/* Logout with enhanced styling */}
+            <div className="relative border-t border-border/30 py-2 bg-destructive/5">
+              <motion.button
+                onClick={handleLogout}
+                className="flex items-center w-full px-4 py-3 text-sm text-destructive hover:bg-destructive/10 transition-colors group"
+                data-testid="button-logout"
+                whileHover={{ x: 4 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <motion.div
+                  whileHover={{ x: 2, rotate: -5 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <LogOut className="w-4 h-4 mr-3" />
+                </motion.div>
+                Sign Out
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
