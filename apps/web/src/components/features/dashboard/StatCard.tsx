@@ -1,6 +1,6 @@
 /**
  * Statistics Card Component
- * @fileoverview Display card for dashboard statistics
+ * @fileoverview CodeRabbit-inspired professional stat card
  */
 
 import { LucideIcon } from 'lucide-react';
@@ -12,24 +12,41 @@ interface StatCardProps {
   value: string;
   /** Icon component */
   icon: LucideIcon;
+  /** Optional trend indicator */
+  trend?: {
+    value: string;
+    isPositive: boolean;
+  };
 }
 
 /**
- * Professional statistics card component
- * Displays key metrics with icons in a clean card layout
+ * Professional statistics card with CodeRabbit-style design
+ * Clean typography, proper spacing, and subtle interactions
  */
-export function StatCard({ title, value, icon: Icon }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, trend }: StatCardProps) {
   return (
-    <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-zinc-700 transition-colors duration-200">
-      <div className="flex items-center">
-        <div className="flex-shrink-0">
-          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-            <Icon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+    <div className="group bg-card rounded-xl p-6 border border-border hover:shadow-md transition-all duration-200 hover:border-border/80">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center group-hover:bg-primary/15 transition-colors">
+              <Icon className="w-5 h-5 text-primary" />
+            </div>
+            <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
           </div>
-        </div>
-        <div className="ml-4">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
-          <p className="text-2xl font-semibold text-gray-900 dark:text-white">{value}</p>
+          <div className="space-y-1">
+            <p className="text-3xl font-bold text-foreground tracking-tight">{value}</p>
+            {trend && (
+              <div className="flex items-center space-x-1">
+                <span className={`text-sm font-medium ${
+                  trend.isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                }`}>
+                  {trend.isPositive ? '↗' : '↘'} {trend.value}
+                </span>
+                <span className="text-xs text-muted-foreground">from last week</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

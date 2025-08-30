@@ -1,9 +1,7 @@
 /**
  * Dashboard Layout Component
- * @fileoverview Main layout wrapper for dashboard pages
+ * @fileoverview CodeRabbit-inspired professional layout wrapper
  */
-
-'use client';
 
 import { useState } from 'react';
 import { Sidebar } from './Sidebar';
@@ -15,8 +13,8 @@ interface DashboardLayoutProps {
 }
 
 /**
- * Professional dashboard layout with responsive sidebar
- * Manages mobile sidebar state and provides consistent layout structure
+ * Professional dashboard layout matching CodeRabbit's design patterns
+ * Clean, responsive layout with proper spacing and visual hierarchy
  */
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -26,7 +24,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-zinc-900">
+    <div className="flex h-screen bg-background">
       {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} onToggle={toggleSidebar} />
       
@@ -36,8 +34,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <Header onMenuClick={toggleSidebar} />
         
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="py-6 px-6">
+        <main className="flex-1 overflow-y-auto bg-muted/20">
+          <div className="container mx-auto px-6 py-8 max-w-7xl">
             {children}
           </div>
         </main>

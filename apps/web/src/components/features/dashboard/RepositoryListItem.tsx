@@ -1,9 +1,10 @@
 /**
  * Repository List Item Component
- * @fileoverview Individual repository row display
+ * @fileoverview CodeRabbit-inspired individual repository display
  */
 
 import { Repository } from '@mesrai/shared';
+import { GitBranch, Clock, ExternalLink } from 'lucide-react';
 
 interface RepositoryListItemProps {
   /** Repository data to display */
@@ -11,35 +12,41 @@ interface RepositoryListItemProps {
 }
 
 /**
- * Status badge component for repository status
+ * Status indicator with dot and label
  */
-function StatusBadge({ status }: { status: Repository['status'] }) {
+function StatusIndicator({ status }: { status: Repository['status'] }) {
   const statusConfig = {
     active: {
-      className: 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400',
-      label: 'Active'
+      dotColor: 'bg-green-500',
+      label: 'Active',
+      textColor: 'text-green-700 dark:text-green-400'
     },
     inactive: {
-      className: 'bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400',
-      label: 'Inactive'
+      dotColor: 'bg-red-500',
+      label: 'Inactive',
+      textColor: 'text-red-700 dark:text-red-400'
     },
     paused: {
-      className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-400',
-      label: 'Paused'
+      dotColor: 'bg-yellow-500',
+      label: 'Paused',
+      textColor: 'text-yellow-700 dark:text-yellow-400'
     }
   };
 
   const config = statusConfig[status];
 
   return (
-    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${config.className}`}>
-      {config.label}
-    </span>
+    <div className="flex items-center space-x-2">
+      <div className={`w-2 h-2 rounded-full ${config.dotColor}`}></div>
+      <span className={`text-sm font-medium ${config.textColor}`}>
+        {config.label}
+      </span>
+    </div>
   );
 }
 
 /**
- * Code health score display with color coding
+ * Health score with progress ring
  */
 function HealthScore({ score }: { score: number }) {
   const getScoreColor = (score: number) => {
@@ -49,53 +56,89 @@ function HealthScore({ score }: { score: number }) {
   };
 
   return (
-    <span className={`font-medium ${getScoreColor(score)}`}>
-      {score}%
-    </span>
+    <div className="flex items-center space-x-2">
+      <div className="relative w-8 h-8">
+        <svg className="w-8 h-8 transform -rotate-90" viewBox="0 0 32 32">
+          <circle
+            cx="16"
+            cy="16"
+            r="12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="text-muted opacity-20"
+          />
+          <circle
+            cx="16"
+            cy="16"
+            r="12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeDasharray={`${(score * 75.4) / 100} 75.4`}
+            className={getScoreColor(score)}
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className={`text-xs font-bold ${getScoreColor(score)}`}>
+            {score}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }
 
 /**
- * Professional repository list item component
- * Displays repository information in a clean, responsive grid layout
+ * Professional repository list item with CodeRabbit-style layout
+ * Hover effects and clean information display
  */
 export function RepositoryListItem({ repository }: RepositoryListItemProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 py-4 border-b border-gray-200 dark:border-zinc-700 last:border-b-0">
-      {/* Repository name and owner */}
-      <div className="col-span-2 md:col-span-1">
-        <div className="flex flex-col">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-            {repository.name.split('/')[1]}
-          </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-            {repository.owner}
-          </p>
+    <div className="group p-6 hover:bg-accent/30 transition-colors cursor-pointer">
+      <div className="flex items-center justify-between">
+        {/* Repository info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center">
+                <GitBranch className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-base font-semibold text-foreground truncate">
+                  {repository.name.split('/')[1]}
+                </h3>
+                <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <p className="text-sm text-muted-foreground truncate">
+                {repository.owner}
+              </p>
+            </div>
+          </div>
+          
+          {/* Metrics row */}
+          <div className="flex items-center space-x-6 text-sm">
+            <div className="flex items-center space-x-2">
+              <span className="text-muted-foreground">PRs:</span>
+              <span className="font-medium text-foreground">{repository.pullRequestCount}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <span className="text-muted-foreground">{repository.lastReviewDate}</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Status */}
-      <div className="flex items-center">
-        <StatusBadge status={repository.status} />
-      </div>
-
-      {/* Pull requests count */}
-      <div className="flex items-center">
-        <span className="text-sm text-gray-900 dark:text-white">
-          {repository.pullRequestCount} PRs
-        </span>
-      </div>
-
-      {/* Health score */}
-      <div className="flex items-center">
-        <HealthScore score={repository.codeHealthScore} />
-      </div>
-
-      {/* Last review date */}
-      <div className="flex items-center">
-        <span className="text-sm text-gray-500 dark:text-gray-400">
-          {repository.lastReviewDate}
-        </span>
+        {/* Status and health */}
+        <div className="flex items-center space-x-6">
+          <StatusIndicator status={repository.status} />
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground mb-1">Health Score</p>
+            <HealthScore score={repository.codeHealthScore} />
+          </div>
+        </div>
       </div>
     </div>
   );
