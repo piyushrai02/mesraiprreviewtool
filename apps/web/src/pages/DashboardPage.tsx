@@ -1,8 +1,9 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Users, GitBranch, MessageSquare } from 'lucide-react';
+import { BarChart3, Users, GitBranch, MessageSquare, TrendingUp, Star, Zap } from 'lucide-react';
 
 export default function DashboardPage() {
   const stats = [
@@ -37,55 +38,166 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-8 animate-fade-in" data-testid="dashboard-page">
-      {/* Header Section */}
-      <div className="space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight text-gradient">Dashboard</h1>
-        <p className="text-lg text-muted-foreground">
-          Welcome back! Here's an overview of your code review activity.
-        </p>
-      </div>
+    <motion.div 
+      className="space-y-8" 
+      data-testid="dashboard-page"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+    >
+      {/* Enhanced Header Section */}
+      <motion.div 
+        className="space-y-4"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.5 }}
+      >
+        <div className="flex items-center gap-3">
+          <motion.div
+            animate={{ 
+              rotate: [0, 360],
+              scale: [1, 1.1, 1]
+            }}
+            transition={{ 
+              rotate: { duration: 20, repeat: Infinity, ease: "linear" },
+              scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+            }}
+            className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-glow"
+          >
+            <Star className="w-6 h-6 text-primary-foreground" />
+          </motion.div>
+          <div>
+            <motion.h1 
+              className="text-4xl font-bold tracking-tight text-gradient"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              Dashboard
+            </motion.h1>
+            <motion.p 
+              className="text-lg text-muted-foreground"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              Welcome back! Here's an overview of your code review activity.
+            </motion.p>
+          </div>
+        </div>
+      </motion.div>
 
-      {/* Stats Grid with Advanced Design */}
-      <div className="grid-dashboard">
+      {/* Enhanced Stats Grid with Advanced Animations */}
+      <motion.div 
+        className="grid-dashboard"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4, duration: 0.6 }}
+      >
         {stats.map((stat, index) => {
           const IconComponent = stat.icon;
           return (
-            <Card 
-              key={stat.title} 
-              className="card-modern hover:shadow-glow group animate-slide-up"
+            <motion.div
+              key={stat.title}
+              initial={{ 
+                opacity: 0, 
+                y: 50,
+                scale: 0.8,
+                rotateX: -15
+              }}
+              animate={{ 
+                opacity: 1, 
+                y: 0,
+                scale: 1,
+                rotateX: 0
+              }}
+              transition={{ 
+                delay: 0.5 + (index * 0.1), 
+                duration: 0.6,
+                ease: "easeOut"
+              }}
+              whileHover={{ 
+                y: -5,
+                scale: 1.02,
+                transition: { duration: 0.2 }
+              }}
               data-testid={`stat-card-${stat.title.toLowerCase().replace(/\s+/g, '-')}`}
-              style={{ animationDelay: `${index * 100}ms` }}
             >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-semibold text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <div className="relative">
-                  <div className="absolute inset-0 bg-primary/20 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative p-2 bg-gradient-primary/10 rounded-lg border border-primary/20 group-hover:scale-110 transition-transform duration-300">
-                    <IconComponent className="h-5 w-5 text-primary" />
+              <Card className="card-modern group overflow-hidden relative">
+                {/* Animated background effect */}
+                <motion.div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100"
+                  animate={{
+                    background: [
+                      'linear-gradient(45deg, transparent, hsl(var(--primary) / 0.05), transparent)',
+                      'linear-gradient(45deg, transparent, hsl(var(--primary) / 0.1), transparent)',
+                      'linear-gradient(45deg, transparent, hsl(var(--primary) / 0.05), transparent)'
+                    ]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+                
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+                  <CardTitle className="text-sm font-semibold text-muted-foreground group-hover:text-foreground transition-colors duration-300">
+                    {stat.title}
+                  </CardTitle>
+                  <motion.div
+                    whileHover={{ 
+                      scale: 1.2,
+                      rotate: 10
+                    }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                    className="relative"
+                  >
+                    <motion.div
+                      animate={{
+                        boxShadow: [
+                          '0 0 0 0 hsl(var(--primary) / 0)',
+                          '0 0 0 8px hsl(var(--primary) / 0.1)',
+                          '0 0 0 0 hsl(var(--primary) / 0)'
+                        ]
+                      }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="p-3 bg-gradient-primary/10 rounded-xl border border-primary/20"
+                    >
+                      <IconComponent className="h-5 w-5 text-primary" />
+                    </motion.div>
+                  </motion.div>
+                </CardHeader>
+                
+                <CardContent className="space-y-4 relative z-10">
+                  <motion.div 
+                    className="text-3xl font-bold text-foreground"
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.7 + (index * 0.1), duration: 0.4 }}
+                  >
+                    {stat.value}
+                  </motion.div>
+                  <p className="text-sm text-muted-foreground">
+                    {stat.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <motion.div 
+                      className="badge-success"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <TrendingUp className="w-3 h-3 mr-1" />
+                      {stat.trend}
+                    </motion.div>
+                    <motion.div 
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="w-2 h-2 bg-primary rounded-full"
+                    />
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="text-3xl font-bold text-foreground group-hover:text-primary transition-colors duration-300">
-                  {stat.value}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {stat.description}
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="badge-success">
-                    {stat.trend}
-                  </div>
-                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
           );
         })}
-      </div>
+      </motion.div>
 
       {/* Recent Activity with Advanced Layout */}
       <div className="grid gap-6 lg:grid-cols-7">
@@ -164,6 +276,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </motion.div>
   );
 }

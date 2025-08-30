@@ -4,7 +4,8 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LogOut, User, Settings, ChevronDown, Crown, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface UserMenuProps {
@@ -12,7 +13,13 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ collapsed = false }: UserMenuProps) {
-  const user = { username: 'Demo User', email: 'demo@example.com', avatarUrl: null };
+  const user = { 
+    username: 'Alex Johnson', 
+    email: 'alex@mesrai.ai', 
+    avatarUrl: null,
+    role: 'Lead Developer',
+    plan: 'Pro Plan'
+  };
   const isLoading = false;
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -49,43 +56,82 @@ export function UserMenu({ collapsed = false }: UserMenuProps) {
 
   if (collapsed) {
     return (
-      <div className="flex items-center justify-center">
-        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-          <User className="w-4 h-4 text-primary-foreground" />
-        </div>
-      </div>
+      <motion.div 
+        className="flex items-center justify-center"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <motion.div 
+          className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow relative overflow-hidden"
+          animate={{
+            boxShadow: [
+              '0 0 0 0 hsl(var(--primary) / 0)',
+              '0 0 0 4px hsl(var(--primary) / 0.1)',
+              '0 0 0 0 hsl(var(--primary) / 0)'
+            ]
+          }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <Crown className="w-5 h-5 text-primary-foreground" />
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+            animate={{ x: [-100, 100] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          />
+        </motion.div>
+      </motion.div>
     );
   }
 
   return (
     <div className="relative" ref={menuRef}>
-      <button
+      <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
+        className="flex items-center space-x-3 p-3 w-full rounded-xl glass border border-border/30 hover:border-primary/20 transition-all duration-300 group"
         data-testid="button-user-menu"
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
       >
-        <img
-          src={user.avatarUrl || `https://github.com/identicons/${user.username}.png`}
-          alt={user.username}
-          className="w-8 h-8 rounded-full border border-border"
-          onError={(e) => {
-            e.currentTarget.src = `https://github.com/identicons/${user.username}.png`;
-          }}
-        />
-        <div className="hidden md:block text-left">
-          <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-32">
-            {user.username}
-          </p>
-          {user.email && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-32">
-              {user.email}
-            </p>
-          )}
+        <div className="relative">
+          <motion.div
+            className="w-10 h-10 bg-gradient-primary rounded-full border-2 border-primary/20 shadow-glow overflow-hidden"
+            whileHover={{ scale: 1.1 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <div className="w-full h-full bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center">
+              <Crown className="w-5 h-5 text-primary-foreground" />
+            </div>
+          </motion.div>
+          <motion.div
+            className="absolute -top-1 -right-1 w-4 h-4 bg-success rounded-full border-2 border-background flex items-center justify-center"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <Sparkles className="w-2 h-2 text-success-foreground" />
+          </motion.div>
         </div>
-        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${
-          isOpen ? 'rotate-180' : ''
-        }`} />
-      </button>
+        
+        <div className="flex-1 text-left">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+              {user.username}
+            </p>
+            <div className="badge-primary text-xs">
+              {user.plan}
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {user.role}
+          </p>
+        </div>
+        
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+        </motion.div>
+      </motion.button>
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 py-2 z-50">
