@@ -71,50 +71,54 @@ export function Sidebar({ className, collapsed = false, onToggleCollapse }: Side
   return (
     <aside
       className={cn(
-        'flex flex-col bg-card border-r border-border transition-all duration-300',
-        collapsed ? 'w-16' : 'w-64',
+        'flex flex-col glass border-r border-border/30 transition-all duration-500 ease-in-out backdrop-blur-xl animate-fade-in',
+        collapsed ? 'w-16' : 'w-72',
+        'bg-gradient-to-b from-background/95 via-background/90 to-background/95',
         className
       )}
       data-testid="sidebar"
     >
-      {/* Header */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">M</span>
+      {/* Header with gradient */}
+      <div className="p-6 border-b border-border/30 bg-gradient-primary/5">
+        <div className="flex items-center gap-4">
+          <div className="relative w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow animate-scale-in">
+            <span className="text-primary-foreground font-bold text-lg">M</span>
+            <div className="absolute inset-0 bg-white/20 rounded-xl animate-pulse opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
           </div>
           {!collapsed && (
-            <div>
-              <h1 className="font-semibold text-sm">Mesrai AI</h1>
-              <p className="text-xs text-muted-foreground">Review Tool</p>
+            <div className="animate-slide-up">
+              <h1 className="font-bold text-lg text-gradient">Mesrai AI</h1>
+              <p className="text-sm text-muted-foreground font-medium">Review Tool</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-        {MAIN_NAVIGATION.map(item => renderNavItem(item))}
+      {/* Navigation with advanced styling */}
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto scrollbar-hide">
+        <div className="space-y-1">
+          {MAIN_NAVIGATION.map(item => renderNavItem(item))}
+        </div>
       </nav>
 
-      {/* User Menu */}
-      <div className="p-2 border-t border-border">
+      {/* User Menu with glass effect */}
+      <div className="p-4 border-t border-border/30 glass">
         <UserMenu collapsed={collapsed} />
       </div>
 
-      {/* Collapse Toggle */}
+      {/* Advanced Collapse Toggle */}
       {onToggleCollapse && (
         <button
           onClick={onToggleCollapse}
           className={cn(
-            'absolute -right-3 top-20 w-6 h-6 bg-background border border-border rounded-full flex items-center justify-center shadow-sm hover:bg-accent transition-colors',
-            'hidden lg:flex'
+            'absolute -right-4 top-24 w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow hover:shadow-floating transition-all duration-300 hover:scale-110 active:scale-95',
+            'hidden lg:flex group border-2 border-white/20'
           )}
           data-testid="sidebar-toggle"
         >
           <ChevronRight
             className={cn(
-              'w-3 h-3 transition-transform',
+              'w-4 h-4 text-primary-foreground transition-transform duration-300 group-hover:scale-110',
               collapsed ? 'rotate-0' : 'rotate-180'
             )}
           />
