@@ -11,90 +11,13 @@ datasource db {
 }
 
 model User {
-  id                   Int                    @id @default(autoincrement())
-  githubId             String                 @unique
-  username             String
-  email                String?                @unique
-  avatarUrl            String?
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  
-  // GitHub App installations
-  gitHubInstallations  GitHubInstallation[]
+  id        Int      @id @default(autoincrement())
+  githubId  String   @unique
+  username  String
+  email     String?  @unique
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("users")
-}
-
-model GitHubInstallation {
-  id                    Int                     @id @default(autoincrement())
-  installationId        Int                     @unique
-  userId                Int
-  accountLogin          String
-  accountId             Int
-  accountType           String // 'User' or 'Organization'
-  accountAvatarUrl      String?
-  repositorySelection   String // 'all' or 'selected'
-  permissions           Json
-  events                Json
-  isActive              Boolean                 @default(true)
-  suspendedAt           DateTime?
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
-  
-  // Relations
-  user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  repositories          ConnectedRepository[]
-  reviewSessions        ReviewSession[]
-
-  @@map("github_installations")
-}
-
-model ConnectedRepository {
-  id                    String                  @id @default(cuid())
-  githubId              Int                     @unique
-  name                  String
-  fullName              String
-  owner                 String
-  isPrivate             Boolean
-  installationId        Int
-  language              String?
-  defaultBranch         String
-  description           String?
-  starCount             Int                     @default(0)
-  forkCount             Int                     @default(0)
-  openIssuesCount       Int                     @default(0)
-  isActive              Boolean                 @default(true)
-  webhookId             Int?
-  lastSyncAt            DateTime?
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
-  
-  // Relations
-  installation          GitHubInstallation      @relation(fields: [installationId], references: [installationId], onDelete: Cascade)
-  reviewSessions        ReviewSession[]
-
-  @@map("connected_repositories")
-}
-
-model ReviewSession {
-  id                    String                  @id @default(cuid())
-  repositoryId          String
-  installationId        Int
-  pullRequestNumber     Int
-  githubPrId            Int
-  title                 String?
-  author                String?
-  status                String                  @default("queued") // queued, analyzing, reviewed, commented, error
-  reviewComments        Json?                   // Store AI review comments
-  reviewsCount          Int                     @default(0)
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
-  completedAt           DateTime?
-  
-  // Relations
-  repository            ConnectedRepository     @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
-  installation          GitHubInstallation      @relation(fields: [installationId], references: [installationId], onDelete: Cascade)
-
-  @@unique([repositoryId, pullRequestNumber])
-  @@map("review_sessions")
 }

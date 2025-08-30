@@ -60,9 +60,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Show empty state when no repositories or installations are found
-  const showEmptyState = !loading && repositories.length === 0 && dashboardStats.totalRepositories === 0;
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6" data-testid="dashboard-loading">
