@@ -11,7 +11,7 @@ export default defineConfig({
       port: 443,
       clientPort: 443,
     },
-    allowedHosts: ['*'],
+    allowedHosts: 'all',
     strictPort: false
   },
   preview: {
