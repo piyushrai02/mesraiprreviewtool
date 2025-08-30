@@ -3,7 +3,12 @@
  * @fileoverview HTTP client for authentication endpoints
  */
 
-import { ClientUser } from '@shared/types';
+interface ClientUser {
+  id: number;
+  username: string;
+  email?: string | null;
+  avatarUrl?: string | null;
+}
 
 const API_BASE_URL = `/api/v1`;
 
