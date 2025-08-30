@@ -37,47 +37,67 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-6" data-testid="dashboard-page">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
+    <div className="space-y-8 animate-fade-in" data-testid="dashboard-page">
+      {/* Header Section */}
+      <div className="space-y-2">
+        <h1 className="text-4xl font-bold tracking-tight text-gradient">Dashboard</h1>
+        <p className="text-lg text-muted-foreground">
           Welcome back! Here's an overview of your code review activity.
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => {
+      {/* Stats Grid with Advanced Design */}
+      <div className="grid-dashboard">
+        {stats.map((stat, index) => {
           const IconComponent = stat.icon;
           return (
-            <Card key={stat.title} data-testid={`stat-card-${stat.title.toLowerCase().replace(/\s+/g, '-')}`}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                <IconComponent className="h-4 w-4 text-muted-foreground" />
+            <Card 
+              key={stat.title} 
+              className="card-modern hover:shadow-glow group animate-slide-up"
+              data-testid={`stat-card-${stat.title.toLowerCase().replace(/\s+/g, '-')}`}
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">
+                  {stat.title}
+                </CardTitle>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative p-2 bg-gradient-primary/10 rounded-lg border border-primary/20 group-hover:scale-110 transition-transform duration-300">
+                    <IconComponent className="h-5 w-5 text-primary" />
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">{stat.description}</p>
-                <Badge variant="secondary" className="mt-2 text-xs">
-                  {stat.trend}
-                </Badge>
+              <CardContent className="space-y-3">
+                <div className="text-3xl font-bold text-foreground group-hover:text-primary transition-colors duration-300">
+                  {stat.value}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {stat.description}
+                </p>
+                <div className="flex items-center justify-between">
+                  <div className="badge-success">
+                    {stat.trend}
+                  </div>
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                </div>
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      {/* Recent Activity */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Recent Reviews</CardTitle>
-            <CardDescription>
+      {/* Recent Activity with Advanced Layout */}
+      <div className="grid gap-6 lg:grid-cols-7">
+        <Card className="lg:col-span-4 card-modern animate-slide-up" style={{ animationDelay: '400ms' }}>
+          <CardHeader className="border-b border-border/30">
+            <CardTitle className="text-xl font-bold">Recent Reviews</CardTitle>
+            <CardDescription className="text-base">
               Latest code reviews that need your attention
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="p-0">
+            <div className="divide-y divide-border/30">
               {[
                 {
                   title: 'Feature: Add user authentication',
@@ -101,48 +121,46 @@ export default function DashboardPage() {
                   time: '6 hours ago',
                 },
               ].map((review, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">{review.title}</p>
+                <div key={index} className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors duration-200 group">
+                  <div className="space-y-2 flex-1">
+                    <p className="text-sm font-medium group-hover:text-primary transition-colors">{review.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      {review.repo} • by {review.author} • {review.time}
+                      <span className="font-medium">{review.repo}</span> • by {review.author} • {review.time}
                     </p>
                   </div>
-                  <Badge
-                    variant={
-                      review.status === 'approved' ? 'default' :
-                      review.status === 'pending' ? 'secondary' :
-                      'destructive'
-                    }
-                  >
+                  <div className={`badge-${
+                    review.status === 'approved' ? 'success' :
+                    review.status === 'pending' ? 'warning' :
+                    'destructive'
+                  }`}>
                     {review.status}
-                  </Badge>
+                  </div>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>
+        <Card className="lg:col-span-3 card-modern animate-slide-up" style={{ animationDelay: '500ms' }}>
+          <CardHeader className="border-b border-border/30">
+            <CardTitle className="text-xl font-bold">Quick Actions</CardTitle>
+            <CardDescription className="text-base">
               Common tasks and shortcuts
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Button variant="outline" className="w-full p-3 h-auto flex flex-col items-start">
-              <div className="font-medium">Start New Review</div>
-              <div className="text-sm text-muted-foreground">Review pending pull requests</div>
-            </Button>
-            <Button variant="outline" className="w-full p-3 h-auto flex flex-col items-start">
-              <div className="font-medium">Connect Repository</div>
-              <div className="text-sm text-muted-foreground">Add a new GitHub repository</div>
-            </Button>
-            <Button variant="outline" className="w-full p-3 h-auto flex flex-col items-start">
-              <div className="font-medium">View Analytics</div>
-              <div className="text-sm text-muted-foreground">Check team performance metrics</div>
-            </Button>
+          <CardContent className="space-y-4 p-6">
+            <button className="btn-primary w-full">
+              <MessageSquare className="w-4 h-4" />
+              Start New Review
+            </button>
+            <button className="btn-secondary w-full">
+              <GitBranch className="w-4 h-4" />
+              Connect Repository
+            </button>
+            <button className="btn-secondary w-full">
+              <BarChart3 className="w-4 h-4" />
+              View Analytics
+            </button>
           </CardContent>
         </Card>
       </div>
