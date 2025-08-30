@@ -45,39 +45,39 @@ export function StatsCard({ title, value, change, icon: Icon, subtitle, trend }:
   };
 
   return (
-    <div className="card p-4 hover:shadow-md transition-shadow duration-200">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+    <div className="card overflow-hidden">
+      <div className="p-3 md:p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-responsive-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide truncate">
               {title}
             </h3>
-            {Icon && (
-              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <Icon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-            )}
           </div>
+          {Icon && (
+            <div className="p-1.5 md:p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md flex-shrink-0">
+              <Icon className="w-3 h-3 md:w-4 md:h-4 text-blue-600 dark:text-blue-400" />
+            </div>
+          )}
+        </div>
+        
+        <div className="space-y-2">
+          <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+            {typeof value === 'number' ? value.toLocaleString() : value}
+          </p>
           
-          <div className="space-y-2">
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">
-              {typeof value === 'number' ? value.toLocaleString() : value}
+          {subtitle && (
+            <p className="text-responsive-sm text-gray-500 dark:text-gray-400 truncate">
+              {subtitle}
             </p>
-            
-            {subtitle && (
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {subtitle}
-              </p>
-            )}
-            
-            {change && (
-              <div className={`flex items-center space-x-1 text-sm ${getTrendColor()}`}>
-                {getTrendIcon()}
-                <span className="font-medium">{change.value}</span>
-                <span className="text-gray-500 dark:text-gray-400">vs last period</span>
-              </div>
-            )}
-          </div>
+          )}
+          
+          {change && (
+            <div className={`flex items-center space-x-1 text-xs md:text-sm ${getTrendColor()}`}>
+              {getTrendIcon()}
+              <span className="font-medium">{change.value}</span>
+              <span className="text-gray-500 dark:text-gray-400 hidden sm:inline">vs last period</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

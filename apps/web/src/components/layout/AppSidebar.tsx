@@ -118,8 +118,8 @@ export function AppSidebar({ isCollapsed = false, onToggleCollapse }: AppSidebar
   return (
     <div className={`
       h-full bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 
-      transition-all duration-300 flex flex-col
-      ${collapsed ? 'w-16' : 'w-64'}
+      transition-all duration-300 flex flex-col flex-shrink-0
+      ${collapsed ? 'w-12 md:w-16' : 'w-56 md:w-64'}
     `}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">

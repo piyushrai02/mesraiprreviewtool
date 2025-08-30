@@ -90,45 +90,45 @@ export function RecentActivity() {
 
   return (
     <div className="card">
-      <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Activity</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Latest code review activities</p>
+      <div className="p-4 md:p-6 border-b border-gray-200 dark:border-slate-700">
+        <h3 className="text-responsive-lg font-semibold text-gray-900 dark:text-white">Recent Activity</h3>
+        <p className="text-responsive-sm text-gray-500 dark:text-gray-400 mt-1">Latest code review activities</p>
       </div>
       
-      <div className="p-6">
-        <div className="space-y-4">
+      <div className="p-4 md:p-6">
+        <div className="space-y-3 md:space-y-4">
           {mockActivities.map((activity) => (
-            <div key={activity.id} className="flex items-start space-x-4 p-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors">
-              <div className={`p-2 rounded-lg ${getActivityColor(activity.type)}`}>
+            <div key={activity.id} className="flex items-start space-x-3 md:space-x-4 p-2 md:p-3 hover:bg-gray-50 dark:hover:bg-slate-800/50 rounded-md transition-colors">
+              <div className={`p-1.5 md:p-2 rounded-md flex-shrink-0 ${getActivityColor(activity.type)}`}>
                 {getActivityIcon(activity.type)}
               </div>
               
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                <div className="flex items-start justify-between mb-1">
+                  <p className="text-responsive-sm font-medium text-gray-900 dark:text-white pr-2">
                     {activity.title}
                   </p>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
                     {activity.time}
                   </span>
                 </div>
                 
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                <p className="text-responsive-sm text-gray-600 dark:text-gray-300 mb-2 line-clamp-2">
                   {activity.description}
                 </p>
                 
-                <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                  <span>by {activity.author.name}</span>
-                  <span>•</span>
-                  <span>{activity.repository}</span>
+                <div className="flex items-center space-x-2 md:space-x-4 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
+                  <span className="truncate">by {activity.author.name}</span>
+                  <span className="hidden sm:inline">•</span>
+                  <span className="truncate">{activity.repository}</span>
                 </div>
               </div>
             </div>
           ))}
         </div>
         
-        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
-          <button className="w-full text-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
+        <div className="mt-4 md:mt-6 pt-3 md:pt-4 border-t border-gray-200 dark:border-slate-700">
+          <button className="w-full text-center text-responsive-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
             View all activity
           </button>
         </div>
