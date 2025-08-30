@@ -1,0 +1,24 @@
+{
+"name": "mesrai-ai-pr-reviewer-saas",
+"version": "1.0.0",
+"description": "An AI-powered PR reviewer SaaS with a monorepo architecture.",
+"private": true,
+"workspaces": [
+"apps/",
+"packages/",
+"libs/",
+"tools/",
+"infrastructure/"
+],
+"scripts": {
+"build": "turbo run build",
+"dev": "turbo run dev --parallel",
+"test": "turbo run test",
+"lint": "turbo run lint",
+"format": "prettier --write "**/.{ts,tsx,md,js,json}""
+},
+"devDependencies": {
+"prettier": "^3.3.3",
+"turbo": "^2.0.6"
+}
+}
