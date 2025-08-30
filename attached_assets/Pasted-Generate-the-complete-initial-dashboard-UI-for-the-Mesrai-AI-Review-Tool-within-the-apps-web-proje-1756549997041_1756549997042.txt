@@ -1,0 +1,98 @@
+Generate the complete initial dashboard UI for the Mesrai AI Review Tool within the `apps/web` project, ensuring it is responsive, supports dark/light themes, and follows professional coding standards.
+
+**Phase 1: Setup & Shared Types**
+
+1.  **Shared Type Definition:**
+    * In `packages/shared/src/types/repository.types.ts`, define and export a TypeScript type named `Repository` with the following properties:
+        * `id`: `string`
+        * `name`: `string` (e.g., "mesrai-dev/my-repo")
+        * `owner`: `string` (e.g., "mesrai-dev")
+        * `status`: a union type of `"active"` | `"inactive"` | `"paused"`
+        * `pullRequestCount`: `number`
+        * `lastReviewDate`: `string` (formatted date, e.g., "August 30, 2025")
+        * `codeHealthScore`: `number` (0-100)
+
+2.  **Web App Utilities - Mock Data:**
+    * In `apps/web/src/lib/mock-data.ts`, create and export a constant array named `MOCK_REPOSITORIES` of type `Repository[]`.
+    * Populate this array with 5-6 diverse mock repository objects, including different statuses and health scores.
+    * Also, export a constant `MOCK_DASHBOARD_STATS` array of objects, each with `title: string`, `value: string`, and `icon: React.ComponentType<any>` to represent dashboard statistics. Include entries like "Total Repositories", "Open PRs", "Reviews this Week", "Avg. Code Health". (You'll use LucideReact icons for these).
+
+**Phase 2: Theme and Layout Infrastructure**
+
+3.  **Tailwind CSS Configuration:**
+    * In `apps/web/tailwind.config.ts`, ensure `darkMode: "class"` is present to enable class-based dark mode.
+
+4.  **Theme Provider Component:**
+    * Create `apps/web/src/components/providers/ThemeProvider.tsx`.
+    * This component should use `next-themes` (assuming it will be installed). It will simply re-export `NextThemesProvider` and accept `ThemeProviderProps`.
+    * Wrap your main `App` component in `apps/web/src/App.tsx` with this `ThemeProvider`, setting `attribute="class"`, `defaultTheme="system"`, `enableSystem`, and `disableTransitionOnChange`.
+
+5.  **Dashboard Layout:**
+    * In `apps/web/src/components/layout/DashboardLayout.tsx`:
+        * Implement a responsive layout using Flexbox or Grid. It should have a fixed-width `Sidebar` on the left and a main content area on the right.
+        * The main content area should contain a `Header` at the top and then render its `children`.
+        * Apply responsive Tailwind classes: The sidebar should be visible on `md` (medium) screens and hidden by default on smaller screens, with a mechanism to show/hide it (e.g., a button in the header for small screens).
+        * Apply theme-aware background colors: `bg-slate-50 dark:bg-zinc-900` for the main content area.
+
+6.  **Sidebar Component:**
+    * In `apps/web/src/components/layout/Sidebar.tsx`:
+        * Implement a navigation sidebar with a fixed width, dark background (`bg-gray-800 dark:bg-zinc-950`), and contrasting text (`text-white dark:text-gray-200`).
+        * Include a "Mesrai AI" logo/text at the top.
+        * Add navigation links for "Dashboard", "Repositories", "Analytics", "Settings".
+        * Use `lucide-react` icons (e.g., `LayoutDashboard`, `Github`, `BarChart`, `Settings`) for each link.
+        * Ensure the sidebar is responsive (e.g., using `hidden md:flex` and a toggle button for small screens).
+
+7.  **Header Component:**
+    * In `apps/web/src/components/layout/Header.tsx`:
+        * Create a simple header with a white background (`bg-white dark:bg-gray-800`), light bottom border (`border-b dark:border-zinc-700`), and padding.
+        * Include a placeholder for a search input/bar on the left.
+        * Include a placeholder for a user avatar/dropdown on the right.
+        * Integrate a `ThemeSwitcher` component (created next) into the right side of the header.
+
+8.  **Theme Switcher Component:**
+    * In `apps/web/src/components/ThemeSwitcher.tsx`:
+        * Implement a button that uses `next-themes`' `useTheme` hook to toggle between light and dark modes.
+        * Use `lucide-react`'s `Sun` and `Moon` icons, with Tailwind classes to show/hide them based on the current theme (`dark:rotate-0 dark:scale-100` etc.).
+        * Apply professional button styling: `p-2 rounded-full hover:bg-slate-200 dark:hover:bg-zinc-700`.
+
+**Phase 3: Dashboard Content Components**
+
+9.  **Stat Card Component:**
+    * In `apps/web/src/components/features/dashboard/StatCard.tsx`:
+        * Create a component that accepts `title: string`, `value: string`, and `icon: React.ComponentType<any>`.
+        * Style it as a card with `bg-white dark:bg-zinc-800`, `rounded-lg`, `p-6`, `shadow-sm`, and `text-black dark:text-white`.
+        * Display the icon prominently, followed by the title and value.
+
+10. **Repository List Item Component:**
+    * In `apps/web/src/components/features/dashboard/RepositoryListItem.tsx`:
+        * Create a component that accepts a single `repository` prop of type `Repository`.
+        * Render a row-like display for a single repository, showing its `name`, `owner`, `status` (using a dynamic `Badge` component style), `pullRequestCount`, and `codeHealthScore`.
+        * Use Tailwind for responsive row styling (e.g., `grid grid-cols-2 md:grid-cols-5 gap-4 py-3 border-b dark:border-zinc-700`).
+        * For the status, if you don't have a `Badge` component yet, create a simple `span` with conditional Tailwind classes: `bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100` for active, `bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100` for inactive, etc.
+
+11. **Repository List Component:**
+    * In `apps/web/src/components/features/dashboard/RepositoryList.tsx`:
+        * Create a component that accepts a `repositories` prop of type `Repository[]`.
+        * Render a table-like structure or a list container.
+        * Include a header row for "Repository", "Status", "PRs", "Health Score".
+        * Map over the `repositories` prop and render a `RepositoryListItem` for each one.
+        * Apply `bg-white dark:bg-zinc-800`, `rounded-lg`, `shadow-sm`, `p-6` to the container.
+
+**Phase 4: Assemble the Dashboard Page**
+
+12. **Main Dashboard Page:**
+    * In `apps/web/src/app/dashboard/page.tsx`:
+        * Import `DashboardLayout`, `StatCard`, `RepositoryList`, `MOCK_REPOSITORIES`, `MOCK_DASHBOARD_STATS` (and relevant Lucide icons like `LayoutDashboard`, `GitPullRequest`, `CheckCircle`, `HeartPulse`).
+        * Export a default React component for the page.
+        * Wrap the entire content of this page with `DashboardLayout`.
+        * Inside the layout's content area:
+            * Display a responsive grid (`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8`) of `StatCard` components, passing data from `MOCK_DASHBOARD_STATS` and corresponding Lucide icons.
+            * Below the stat cards, render the `RepositoryList` component, passing `MOCK_REPOSITORIES` to it.
+
+**Important Post-Generation Steps:**
+
+* **Install `lucide-react` and `next-themes`:** After generation, navigate to `apps/web` in your terminal and run `npm install lucide-react next-themes`.
+* **Update `apps/web/src/App.tsx`** to use `ThemeProvider` and render the `DashboardLayout`. (If `src/app/dashboard/page.tsx` is meant to be a child of a root layout, adapt `App.tsx` accordingly).
+* **Run `npm run dev` from the monorepo root.**
+
+This prompt provides a detailed plan for Replit to build a robust, theme-aware, and responsive dashboard, leveraging the modularity of your monorepo.

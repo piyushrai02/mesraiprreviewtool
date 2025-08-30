@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -8,8 +9,7 @@ export default defineConfig({
     port: 5000,
     host: '0.0.0.0',
     hmr: {
-      port: 443,
-      clientPort: 443,
+      overlay: false,
     },
     allowedHosts: 'all',
     strictPort: false
@@ -17,5 +17,10 @@ export default defineConfig({
   preview: {
     port: 5000,
     host: '0.0.0.0'
+  },
+  resolve: {
+    alias: {
+      '@mesrai/shared': path.resolve(__dirname, '../../packages/shared/src')
+    }
   }
 })
