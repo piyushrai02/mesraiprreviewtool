@@ -48,13 +48,13 @@ export function ThemeProvider({
     }
   }, [theme]);
 
-  const contextValue = useCallback(() => ({
+  const contextValue = {
     theme,
     setTheme
-  }), [theme, setTheme]);
+  };
 
   return (
-    <ThemeProviderContext.Provider value={contextValue()}>
+    <ThemeProviderContext.Provider value={contextValue}>
       {children}
     </ThemeProviderContext.Provider>
   );
