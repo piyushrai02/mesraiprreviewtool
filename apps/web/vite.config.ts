@@ -18,6 +18,13 @@ export default defineConfig({
       "0.0.0.0"
     ],
     strictPort: false,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
   preview: {
     port: 5000,
