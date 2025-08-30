@@ -5,7 +5,7 @@ import {
   REVIEW_CONFIG,
   REVIEW_COMMENT_TEMPLATES
 } from '@shared/index';
-import { GitHubService } from './github.service';
+import { GitHubService } from './github.service.js';
 
 interface ReviewableFile {
   path: string;
