@@ -1,20 +1,37 @@
-import express from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import { Router } from 'express';
-import jwt from 'jsonwebtoken';
-import axios from 'axios';
-import { PrismaClient } from '@prisma/client';
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import { Router } from "express";
+import jwt from "jsonwebtoken";
+import axios from "axios";
+import { PrismaClient } from "@prisma/client";
 
 const app = express();
 const PORT = 3002;
 const prisma = new PrismaClient();
 
+// Configuration - get the base URL dynamically
+const getBaseUrl = () => {
+  if (process.env.REPLIT_DOMAIN) {
+    return `https://${process.env.REPLIT_DOMAIN}`;
+  }
+  if (process.env.REPL_SLUG) {
+    return `https://${process.env.REPL_SLUG}.replit.dev`;
+  }
+  return process.env.CLIENT_URL || 'http://localhost:5000';
+};
+
+const BASE_URL = getBaseUrl();
+
+console.log(`🚀 Using BASE_URL: ${BASE_URL}`);
+
 // Middleware
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5000',
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: BASE_URL,
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 
@@ -23,27 +40,29 @@ const authMiddleware = async (req: any, res: any, next: any) => {
   try {
     const token = req.cookies?.auth_token;
     if (!token) {
-      return res.status(401).json({ success: false, message: 'Authentication token required' });
+      return res
+        .status(401)
+        .json({ success: false, message: "Authentication token required" });
     }
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
     req.userId = decoded.userId;
     next();
   } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid or expired authentication token' });
+    res.status(401).json({
+      success: false,
+      message: "Invalid or expired authentication token",
+    });
   }
 };
 
 // Auth service functions
 const getGitHubAuthUrl = () => {
-  const baseUrl = 'https://github.com/login/oauth/authorize';
-  // Use the Replit domain for the callback URL since GitHub needs to reach our backend
-  const callbackUrl = process.env.REPL_SLUG ? 
-    `https://${process.env.REPLIT_DOMAIN || process.env.REPL_SLUG + '.replit.dev'}/api/v1/auth/github/callback` :
-    'http://localhost:5000/api/v1/auth/github/callback';
-    
+  const baseUrl = "https://github.com/login/oauth/authorize";
+  const callbackUrl = `${BASE_URL}/api/v1/auth/github/callback`;
+
   const params = new URLSearchParams({
     client_id: process.env.GITHUB_CLIENT_ID!,
-    scope: 'user:email',
+    scope: "user:email",
     redirect_uri: callbackUrl,
   });
   return `${baseUrl}?${params.toString()}`;
@@ -51,13 +70,13 @@ const getGitHubAuthUrl = () => {
 
 const exchangeCodeForToken = async (code: string): Promise<string> => {
   const response = await axios.post(
-    'https://github.com/login/oauth/access_token',
+    "https://github.com/login/oauth/access_token",
     {
       client_id: process.env.GITHUB_CLIENT_ID!,
       client_secret: process.env.GITHUB_CLIENT_SECRET!,
       code,
     },
-    { headers: { Accept: 'application/json' } }
+    { headers: { Accept: "application/json" } },
   );
   if (response.data.error) {
     throw new Error(`GitHub OAuth error: ${response.data.error_description}`);
@@ -66,10 +85,10 @@ const exchangeCodeForToken = async (code: string): Promise<string> => {
 };
 
 const fetchGitHubUser = async (accessToken: string) => {
-  const response = await axios.get('https://api.github.com/user', {
+  const response = await axios.get("https://api.github.com/user", {
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      'User-Agent': 'Mesrai-AI-Review-Tool',
+      "User-Agent": "Mesrai-AI-Review-Tool",
     },
   });
   return response.data;
@@ -78,35 +97,42 @@ const fetchGitHubUser = async (accessToken: string) => {
 // Auth routes
 const authRouter = Router();
 
-authRouter.get('/github', (req, res) => {
+authRouter.get("/github", (req, res) => {
   try {
     const authUrl = getGitHubAuthUrl();
     res.redirect(authUrl);
   } catch (error) {
-    console.error('Error redirecting to GitHub:', error);
-    res.status(500).json({ success: false, message: 'Failed to initiate GitHub authentication' });
+    console.error("Error redirecting to GitHub:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to initiate GitHub authentication",
+    });
   }
 });
 
-authRouter.get('/github/callback', async (req, res) => {
+authRouter.get("/github/callback", async (req, res) => {
   try {
     const { code, error } = req.query;
-    
+
     if (error) {
-      console.error('GitHub OAuth error:', error);
-      return res.redirect(`https://workspace.replit.dev/login?error=oauth_failed`);
+      console.error("GitHub OAuth error:", error);
+      return res.redirect(
+        `${BASE_URL}/login?error=oauth_failed`,
+      );
     }
-    
-    if (!code || typeof code !== 'string') {
-      return res.redirect(`https://workspace.replit.dev/login?error=missing_code`);
+
+    if (!code || typeof code !== "string") {
+      return res.redirect(
+        `${BASE_URL}/login?error=missing_code`,
+      );
     }
 
     // Exchange code for access token
     const accessToken = await exchangeCodeForToken(code);
-    
+
     // Fetch user profile from GitHub
     const githubUser = await fetchGitHubUser(accessToken);
-    
+
     // Create or update user in database
     const user = await prisma.user.upsert({
       where: { githubId: githubUser.id.toString() },
@@ -128,34 +154,36 @@ authRouter.get('/github/callback', async (req, res) => {
     const token = jwt.sign(
       { userId: user.id, iat: Math.floor(Date.now() / 1000) },
       process.env.JWT_SECRET!,
-      { expiresIn: '7d' }
+      { expiresIn: "7d" },
     );
 
     // Set secure HTTP-only cookie
-    res.cookie('auth_token', token, {
+    res.cookie("auth_token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/',
+      path: "/",
     });
 
     // Redirect to dashboard
-    res.redirect(`https://workspace.replit.dev/dashboard`);
+    res.redirect(`${BASE_URL}/dashboard`);
   } catch (error) {
-    console.error('Error in GitHub callback:', error);
-    res.redirect(`https://workspace.replit.dev/login?error=auth_failed`);
+    console.error("Error in GitHub callback:", error);
+    res.redirect(`${BASE_URL}/login?error=auth_failed`);
   }
 });
 
-authRouter.get('/me', authMiddleware, async (req: any, res) => {
+authRouter.get("/me", authMiddleware, async (req: any, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
     });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     res.json({
@@ -168,32 +196,34 @@ authRouter.get('/me', authMiddleware, async (req: any, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch user information' });
+    console.error("Error fetching user:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch user information" });
   }
 });
 
-authRouter.post('/logout', (req, res) => {
+authRouter.post("/logout", (req, res) => {
   try {
-    res.clearCookie('auth_token', {
+    res.clearCookie("auth_token", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
     });
 
-    res.json({ success: true, message: 'Successfully logged out' });
+    res.json({ success: true, message: "Successfully logged out" });
   } catch (error) {
-    console.error('Error during logout:', error);
-    res.status(500).json({ success: false, message: 'Failed to logout' });
+    console.error("Error during logout:", error);
+    res.status(500).json({ success: false, message: "Failed to logout" });
   }
 });
 
-app.use('/api/v1/auth', authRouter);
+app.use("/api/v1/auth", authRouter);
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({ message: 'API is running!', timestamp: new Date().toISOString() });
+app.get("/api/health", (req, res) => {
+  res.json({ message: "API is running!", timestamp: new Date().toISOString() });
 });
 
 app.listen(PORT, () => {
