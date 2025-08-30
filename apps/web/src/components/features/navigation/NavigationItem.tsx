@@ -31,6 +31,7 @@ export function NavigationItem({
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (hasChildren && onToggleExpand) {
       onToggleExpand();
     } else if (onClick) {
