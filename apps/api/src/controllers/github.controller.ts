@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { GitHubService } from '../services/github.service';
-import { AIReviewService } from '../services/ai-review.service';
+import { GitHubService } from '../services/github.service.js';
+import { AIReviewService } from '../services/ai-review.service.js';
 import {
   GitHubAppInstallationRequest,
   GitHubAppInstallationResponse,
@@ -131,11 +131,59 @@ export class GitHubController {
   getRepositories = async (req: Request, res: Response): Promise<void> => {
     try {
       // Here you would fetch repositories from your database
-      // For now, we'll return a mock response
+      // For now, we'll return mock repositories with real-looking data
+      
+      const mockRepositories = [
+        {
+          id: '1',
+          githubId: 123456789,
+          name: 'awesome-project',
+          fullName: 'myorg/awesome-project',
+          owner: 'myorg',
+          isPrivate: false,
+          installationId: 12345,
+          language: 'TypeScript',
+          defaultBranch: 'main',
+          isActive: true,
+          lastSyncAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: '2',
+          githubId: 987654321,
+          name: 'api-service',
+          fullName: 'myorg/api-service',
+          owner: 'myorg',
+          isPrivate: true,
+          installationId: 12345,
+          language: 'Python',
+          defaultBranch: 'main',
+          isActive: true,
+          lastSyncAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: '3',
+          githubId: 456789123,
+          name: 'frontend-app',
+          fullName: 'myorg/frontend-app',
+          owner: 'myorg',
+          isPrivate: false,
+          installationId: 12345,
+          language: 'JavaScript',
+          defaultBranch: 'develop',
+          isActive: false,
+          lastSyncAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+        }
+      ];
       
       res.json({
         success: true,
-        data: [],
+        data: mockRepositories,
         message: 'Repositories fetched successfully'
       });
     } catch (error) {
@@ -175,6 +223,60 @@ export class GitHubController {
       res.status(500).json({
         success: false,
         message: 'Failed to fetch repository'
+      });
+    }
+  };
+
+  /**
+   * Get all review sessions
+   */
+  getReviews = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Here you would fetch reviews from your database
+      // For now, we'll return mock reviews
+      
+      const mockReviews = [
+        {
+          id: 'review-1',
+          repositoryId: '1',
+          pullRequestNumber: 42,
+          githubPrId: 123456,
+          status: 'reviewed',
+          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(),
+          completedAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: 'review-2',
+          repositoryId: '2',
+          pullRequestNumber: 18,
+          githubPrId: 789012,
+          status: 'analyzing',
+          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: 'review-3',
+          repositoryId: '1',
+          pullRequestNumber: 87,
+          githubPrId: 345678,
+          status: 'commented',
+          createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 11 * 60 * 60 * 1000).toISOString(),
+          completedAt: new Date(Date.now() - 11 * 60 * 60 * 1000).toISOString()
+        }
+      ];
+
+      res.json({
+        success: true,
+        data: mockReviews,
+        message: 'Reviews fetched successfully'
+      });
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch reviews'
       });
     }
   };

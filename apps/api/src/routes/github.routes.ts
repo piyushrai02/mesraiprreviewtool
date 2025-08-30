@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { GitHubController } from '../controllers/github.controller';
+import { GitHubController } from '../controllers/github.controller.js';
 
 const router = Router();
 const githubController = new GitHubController();
@@ -15,6 +15,7 @@ router.get('/repositories', githubController.getRepositories);
 router.get('/repositories/:id', githubController.getRepository);
 
 // Review management routes
+router.get('/reviews', githubController.getReviews);
 router.post('/review/start', githubController.startReview);
 router.get('/review/:id/status', githubController.getReviewStatus);
 
