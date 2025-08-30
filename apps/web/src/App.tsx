@@ -1,16 +1,19 @@
 import './App.css'
 import { ThemeProvider } from './components/providers/ThemeProvider'
+import { AuthProvider } from './components/providers/AuthProvider'
 import DashboardPage from './app/dashboard/page'
 
 function App() {
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="system"
+      defaultTheme="light"
       enableSystem
       disableTransitionOnChange
     >
-      <DashboardPage />
+      <AuthProvider>
+        <DashboardPage />
+      </AuthProvider>
     </ThemeProvider>
   )
 }

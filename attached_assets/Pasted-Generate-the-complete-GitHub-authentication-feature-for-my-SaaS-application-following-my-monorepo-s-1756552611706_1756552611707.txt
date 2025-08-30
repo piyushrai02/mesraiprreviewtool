@@ -1,0 +1,114 @@
+Generate the complete GitHub authentication feature for my SaaS application, following my monorepo structure. This feature should be secure, type-safe, and ready for production.
+
+**Phase 1: Database Schema & Shared Logic**
+
+1.  **Update Database Schema:**
+    * In the root `prisma/schema.prisma` file, define the `User` model. This model will store user information retrieved from GitHub.
+
+    ```prisma
+    // prisma/schema.prisma
+    model User {
+      id        Int      @id @default(autoincrement())
+      githubId  String   @unique
+      username  String
+      email     String?  @unique
+      avatarUrl String?
+      createdAt DateTime @default(now())
+      updatedAt DateTime @updatedAt
+    }
+    ```
+
+2.  **Define Shared User Type:**
+    * In `packages/shared/src/types/user.types.ts`, create and export a type for the client-safe user object.
+
+    ```typescript
+    // packages/shared/src/types/user.types.ts
+    export type ClientUser = {
+      id: number;
+      username: string;
+      email?: string | null;
+      avatarUrl?: string | null;
+    };
+    ```
+
+**Phase 2: Backend API Implementation (`apps/api`)**
+
+3.  **Setup Environment Variables:**
+    * Create an `.env` file in `apps/api/` with the following variables. Replace the placeholder values with your actual GitHub OAuth credentials and a secure secret for signing session tokens.
+
+    ```env
+    # apps/api/.env
+    DATABASE_URL="your_prisma_database_connection_string"
+    GITHUB_CLIENT_ID="your_github_client_id"
+    GITHUB_CLIENT_SECRET="your_github_client_secret"
+    JWT_SECRET="generate_a_strong_random_secret_string_here"
+    CLIENT_URL="https://<your-replit-name>.replit.dev"
+    ```
+
+4.  **Create Authentication Routes:**
+    * In `apps/api/src/routes/v1/auth.routes.ts`, define the endpoints for the OAuth flow.
+
+    ```typescript
+    // apps/api/src/routes/v1/auth.routes.ts
+    import { Router } from 'express';
+    import { redirectToGitHub, handleGitHubCallback, getMe, logout } from '../../controllers/auth.controller';
+    import { authMiddleware } from '../../middleware/auth.middleware';
+
+    const router = Router();
+    router.get('/github', redirectToGitHub);
+    router.get('/github/callback', handleGitHubCallback);
+    router.get('/me', authMiddleware, getMe);
+    router.post('/logout', logout);
+    export default router;
+    ```
+
+5.  **Implement Controller & Service Logic:**
+    * Create `apps/api/src/services/auth.service.ts` to handle the core logic of communicating with GitHub, managing the database, and creating sessions.
+    * Create `apps/api/src/controllers/auth.controller.ts` to handle the Express requests and responses, calling the service methods.
+    * The logic should perform these steps:
+        * **`redirectToGitHub`**: Redirect the user to the GitHub authorization URL.
+        * **`handleGitHubCallback`**:
+            1.  Exchange the temporary `code` from GitHub for an `access_token`.
+            2.  Use the `access_token` to fetch the user's profile from the GitHub API.
+            3.  Perform a database "upsert": Find a user by `githubId`, if they exist, update them; if not, create a new user.
+            4.  Generate a JWT (JSON Web Token) containing the user's ID.
+            5.  Set the JWT in a secure, `HttpOnly` cookie.
+            6.  Redirect the user back to the frontend dashboard (`CLIENT_URL`/dashboard).
+        * **`getMe`**: A protected endpoint that verifies the JWT from the cookie and returns the logged-in user's data.
+        * **`logout`**: Clear the session cookie.
+
+6.  **Create Authentication Middleware:**
+    * In `apps/api/src/middleware/auth.middleware.ts`, create a middleware function that checks for the JWT in the request's cookies, verifies it, and attaches the user's ID to the request object for use in protected routes.
+
+**Phase 3: Frontend UI and Session Management (`apps/web`)**
+
+7.  **Create Login Component:**
+    * In `apps/web/src/components/features/auth/LoginWithGitHubButton.tsx`, create a simple button component.
+    * This component should be an `<a>` tag that links directly to the backend's auth endpoint: `/api/v1/auth/github`. Style it professionally.
+
+8.  **Create Authentication Context and Hook:**
+    * In `apps/web/src/components/providers/AuthProvider.tsx`, create a React Context to manage the global authentication state.
+    * The provider should have state for `user: ClientUser | null`, `isAuthenticated: boolean`, and `isLoading: boolean`.
+    * When the provider mounts, it should call the backend's `/api/v1/auth/me` endpoint to check if a session exists and fetch user data.
+    * Create a custom hook `useAuth` in the same file to easily access the context's values.
+
+9.  **Integrate AuthProvider:**
+    * In `apps/web/src/App.tsx`, wrap your `ThemeProvider` and the rest of the application with this new `AuthProvider`.
+
+10. **Update Header for Conditional Rendering:**
+    * Modify `apps/web/src/components/layout/Header.tsx`.
+    * Use the `useAuth()` hook to get the authentication state (`isAuthenticated`, `user`, `isLoading`).
+    * **If `isLoading` is true:** Show a loading spinner or skeleton UI in place of the user avatar.
+    * **If `isAuthenticated` is true:** Display the `user.avatarUrl` in an `<img>` tag and their `user.username`. Add a "Logout" button.
+    * **If `isAuthenticated` is false:** Display the `LoginWithGitHubButton` component.
+
+11. **Create an API Service for Auth:**
+    * In `apps/web/src/services/api.service.ts`, create functions to handle auth-related API calls (e.g., `fetchMe()`, `logout()`). Use `axios` or `fetch` for this.
+
+**Important Post-Generation Steps:**
+
+* **Install Dependencies:** After generation, navigate to `apps/api` and run `npm install jsonwebtoken cookie-parser axios @types/jsonwebtoken @types/cookie-parser`. Then run `npm install --save-dev prisma` and `npm install @prisma/client` in the root directory. In `apps/web`, run `npm install axios`.
+* **Run Database Migration:** From the root directory, run `npx prisma migrate dev --name init` to create your database tables based on the schema.
+* **Run the App:** Start everything with `npm run dev` from the root.
+
+This comprehensive prompt will build a robust, secure, and fully integrated authentication system that sets the stage for all future features.

@@ -3,8 +3,11 @@
  * @fileoverview Enterprise-grade header component with search and user controls
  */
 
-import { Search, Plus, Bell, User, Menu, Sun, Moon } from 'lucide-react';
+import { Search, Plus, Bell, Menu, Sun, Moon } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../providers/AuthProvider';
+import { LoginWithGitHubButton } from '../features/auth/LoginWithGitHubButton';
+import { UserMenu } from '../features/auth/UserMenu';
 
 interface AppHeaderProps {
   onMenuClick?: () => void;
@@ -14,6 +17,7 @@ interface AppHeaderProps {
 
 export function AppHeader({ onMenuClick, title = "Dashboard", subtitle }: AppHeaderProps) {
   const [isDark, setIsDark] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -55,11 +59,13 @@ export function AppHeader({ onMenuClick, title = "Dashboard", subtitle }: AppHea
 
       {/* Right Section */}
       <div className="flex items-center space-x-2">
-        {/* Quick Action Button */}
-        <button className="btn-primary">
-          <Plus className="w-4 h-4 mr-2" />
-          New Review
-        </button>
+        {/* Quick Action Button - Only show when authenticated */}
+        {isAuthenticated && (
+          <button className="btn-primary">
+            <Plus className="w-4 h-4 mr-2" />
+            New Review
+          </button>
+        )}
 
         {/* Theme Toggle */}
         <button
@@ -69,24 +75,25 @@ export function AppHeader({ onMenuClick, title = "Dashboard", subtitle }: AppHea
           {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
 
-        {/* Notifications */}
-        <button className="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
-
-        {/* User Menu */}
-        <div className="relative">
-          <button className="flex items-center space-x-2 p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-white" />
-            </div>
-            <div className="hidden md:block text-left">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">John Doe</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Admin</p>
-            </div>
+        {/* Notifications - Only show when authenticated */}
+        {isAuthenticated && (
+          <button className="relative p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
-        </div>
+        )}
+
+        {/* Authentication Section */}
+        {isLoading ? (
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+            <div className="w-20 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          </div>
+        ) : isAuthenticated ? (
+          <UserMenu />
+        ) : (
+          <LoginWithGitHubButton size="sm" />
+        )}
       </div>
     </header>
   );
