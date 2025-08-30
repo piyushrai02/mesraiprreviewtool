@@ -94,11 +94,11 @@ authRouter.get('/github/callback', async (req, res) => {
     
     if (error) {
       console.error('GitHub OAuth error:', error);
-      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5000'}/login?error=oauth_failed`);
+      return res.redirect(`https://workspace.replit.dev/login?error=oauth_failed`);
     }
     
     if (!code || typeof code !== 'string') {
-      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5000'}/login?error=missing_code`);
+      return res.redirect(`https://workspace.replit.dev/login?error=missing_code`);
     }
 
     // Exchange code for access token
@@ -141,10 +141,10 @@ authRouter.get('/github/callback', async (req, res) => {
     });
 
     // Redirect to dashboard
-    res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard`);
+    res.redirect(`https://workspace.replit.dev/dashboard`);
   } catch (error) {
     console.error('Error in GitHub callback:', error);
-    res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5000'}/login?error=auth_failed`);
+    res.redirect(`https://workspace.replit.dev/login?error=auth_failed`);
   }
 });
 
