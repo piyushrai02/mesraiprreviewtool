@@ -1,0 +1,105 @@
+The goal is to configure your project as a monorepo workspace. This allows your root package.json to manage and run both the api and web applications with a single command.
+
+Here is your step-by-step guide to set up the UI and Backend.
+
+Step 1: Configure the Root package.json
+This is the most important step. You need to tell NPM that your project has "workspaces" (your api and web apps) and add scripts to run them together.
+
+Open the package.json file in your root ReactNodeStarter directory.
+
+Add the "workspaces" key. This tells NPM to look for packages inside the apps folder.
+
+Add a "dev" script to start both applications at the same time. We'll use a small helper package called concurrently for this.
+
+Your root package.json should look like this:
+
+JSON
+
+{
+  "name": "react-node-starter",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm:dev --workspace=web\" \"npm:dev --workspace=api\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+Step 2: Verify api and web package.json Files
+Make sure both apps/api and apps/web have their own simple package.json file with their own dependencies and dev script.
+
+apps/web/package.json (Example)
+
+JSON
+
+{
+  "name": "web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.2.2",
+    "vite": "^5.2.0"
+  }
+}
+apps/api/package.json (Example)
+
+JSON
+
+{
+  "name": "api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node-dev src/app.ts"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
+  }
+}
+Step 3: Move Frontend Config Files
+From your screenshot, configuration files like vite.config.ts and tailwind.config.ts are in the root directory. These belong to the web application.
+
+Move the following files from your root folder into the apps/web/ folder:
+
+vite.config.ts
+
+tailwind.config.ts
+
+postcss.config.js
+
+These files are specific to your React frontend and should live alongside it.
+
+Step 4: Install and Run! 🚀
+Now that the configuration is correct, you can install all dependencies and run the project.
+
+Delete Existing node_modules: If you have a node_modules folder or a package-lock.json file in the root directory, delete them now to ensure a clean start.
+
+Install Dependencies: Open your terminal in the root ReactNodeStarter folder and run:
+
+Bash
+
+npm install
+This single command will now read your root package.json, find the workspaces (api and web), and install all dependencies for all projects at once. It will also install concurrently.
+
+Start the Application: Run the main dev script from the root folder:
+
+Bash
+
+npm run dev
