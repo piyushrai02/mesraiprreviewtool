@@ -12,6 +12,10 @@ const prisma = new PrismaClient();
 
 // Configuration - get the base URL dynamically
 const getBaseUrl = () => {
+  // Use REPLIT_DOMAINS first (this contains the actual domain)
+  if (process.env.REPLIT_DOMAINS) {
+    return `https://${process.env.REPLIT_DOMAINS}`;
+  }
   if (process.env.REPLIT_DOMAIN) {
     return `https://${process.env.REPLIT_DOMAIN}`;
   }
