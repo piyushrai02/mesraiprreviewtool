@@ -1,26 +1,21 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 5000,
-    host: '0.0.0.0',
+    host: "0.0.0.0",
     hmr: {
-      overlay: false,
+      port: 443,
+      clientPort: 443,
     },
     allowedHosts: 'all',
-    strictPort: false
+    strictPort: false,
   },
   preview: {
     port: 5000,
-    host: '0.0.0.0'
+    host: "0.0.0.0",
   },
-  resolve: {
-    alias: {
-      '@mesrai/shared': path.resolve(__dirname, '../../packages/shared/src')
-    }
-  }
-})
+});
