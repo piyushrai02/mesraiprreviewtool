@@ -3,14 +3,27 @@
  * @fileoverview Provides mock data for development and testing
  */
 
-import { Repository, DashboardStats } from '@mesrai/shared';
+// Local type definitions
+interface Repository {
+  id: string;
+  name: string;
+  owner: string;
+  status: 'active' | 'inactive' | 'paused';
+  pullRequestCount: number;
+  codeHealthScore: number;
+  lastReviewDate: string;
+}
+
+interface DashboardStats {
+  title: string;
+  value: string;
+  icon: any;
+}
 import { 
-  LayoutDashboard, 
   GitPullRequest, 
   CheckCircle, 
   HeartPulse,
-  GitBranch,
-  Users 
+  GitBranch
 } from 'lucide-react';
 
 /**

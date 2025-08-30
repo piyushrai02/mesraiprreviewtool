@@ -3,7 +3,16 @@
  * @fileoverview CodeRabbit-inspired professional repository list
  */
 
-import { Repository } from '@mesrai/shared';
+// Local Repository type definition
+interface Repository {
+  id: string;
+  name: string;
+  owner: string;
+  status: 'active' | 'inactive' | 'paused';
+  pullRequestCount: number;
+  codeHealthScore: number;
+  lastReviewDate: string;
+}
 import { RepositoryListItem } from './RepositoryListItem';
 import { Github, Plus } from 'lucide-react';
 
