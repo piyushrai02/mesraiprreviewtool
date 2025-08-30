@@ -45,7 +45,7 @@ export function StatsCard({ title, value, change, icon: Icon, subtitle, trend }:
   };
 
   return (
-    <div className="card p-6 hover:shadow-md transition-shadow duration-200">
+    <div className="card p-4 hover:shadow-md transition-shadow duration-200">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center justify-between mb-2">

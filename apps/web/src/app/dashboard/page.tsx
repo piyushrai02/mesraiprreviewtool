@@ -54,7 +54,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-slate-900 flex overflow-hidden">
+    <div className="h-screen w-screen bg-gray-50 dark:bg-slate-900 flex overflow-hidden m-0 p-0">
       {/* Sidebar */}
       <AppSidebar 
         isCollapsed={sidebarCollapsed}
@@ -70,9 +70,9 @@ export default function DashboardPage() {
         />
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4">
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {statsData.map((stat, index) => (
               <StatsCard
                 key={index}
@@ -86,7 +86,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
             {/* Performance Chart Placeholder */}
             <div className="lg:col-span-2 card p-6">
               <div className="flex items-center justify-between mb-6">
@@ -135,7 +135,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Recent Activity */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <RecentActivity />
             
             {/* Top Repositories */}
