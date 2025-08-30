@@ -2,7 +2,7 @@ import React, { useState, Suspense } from 'react';
 import { useLocation } from 'wouter';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Sidebar } from '../features/navigation/Sidebar';
+import { ModernSidebar } from '../features/navigation/ModernSidebar';
 import { Breadcrumb } from '../features/navigation/Breadcrumb';
 import { RouteGuard } from '../features/navigation/RouteGuard';
 import { router } from '../../lib/router';
@@ -70,15 +70,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="h-screen w-full bg-background flex overflow-hidden">
       <RouteGuard>
-        {/* Sidebar */}
-        <Sidebar
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={handleToggleSidebar}
-          className={cn(
-            "relative z-40 transition-all duration-300",
-            sidebarCollapsed && "lg:w-16"
-          )}
-        />
+        {/* Modern Sidebar */}
+        <ModernSidebar />
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
