@@ -36,10 +36,15 @@ const authMiddleware = async (req: any, res: any, next: any) => {
 // Auth service functions
 const getGitHubAuthUrl = () => {
   const baseUrl = 'https://github.com/login/oauth/authorize';
+  // Use the Replit domain for the callback URL since GitHub needs to reach our backend
+  const callbackUrl = process.env.REPL_SLUG ? 
+    `https://${process.env.REPLIT_DOMAIN || process.env.REPL_SLUG + '.replit.dev'}/api/v1/auth/github/callback` :
+    'http://localhost:5000/api/v1/auth/github/callback';
+    
   const params = new URLSearchParams({
     client_id: process.env.GITHUB_CLIENT_ID!,
     scope: 'user:email',
-    redirect_uri: `${process.env.CLIENT_URL || 'http://localhost:5000'}/api/v1/auth/github/callback`,
+    redirect_uri: callbackUrl,
   });
   return `${baseUrl}?${params.toString()}`;
 };
