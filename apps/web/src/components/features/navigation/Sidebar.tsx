@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Sparkles, Zap } from 'lucide-react';
+import { ChevronDown, ChevronRight, Sparkles, Zap } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { NavItem } from '@shared/index';
+import { MAIN_NAVIGATION } from '../../../config/navigation.config';
+import { useNavigation } from '../../providers/NavigationProvider';
 import { NavigationItem } from './NavigationItem';
 import { UserMenu } from '../auth/UserMenu';
 
@@ -11,18 +15,9 @@ interface SidebarProps {
   onToggleCollapse?: () => void;
 }
 
-// Simple navigation items for now
-const MAIN_NAVIGATION = [
-  { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
-  { id: 'reviews', label: 'Reviews', path: '/reviews', icon: 'MessageSquare' },
-  { id: 'repositories', label: 'Repositories', path: '/repositories', icon: 'GitBranch' },
-  { id: 'analytics', label: 'Analytics', path: '/analytics', icon: 'BarChart3' },
-  { id: 'team', label: 'Team', path: '/team', icon: 'Users' },
-  { id: 'settings', label: 'Settings', path: '/settings', icon: 'Settings' },
-];
-
 export function Sidebar({ className, collapsed = false, onToggleCollapse }: SidebarProps) {
   const [location] = useLocation();
+  const { navigate } = useNavigation();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(['dashboard']));
 
   const toggleExpanded = (itemId: string) => {
@@ -41,11 +36,11 @@ export function Sidebar({ className, collapsed = false, onToggleCollapse }: Side
     return location === path || location.startsWith(path + '/');
   };
 
-  const renderNavItem = (item: any, level: number = 0) => {
+  const renderNavItem = (item: NavItem, level: number = 0) => {
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedItems.has(item.id);
     const isActive = isPathActive(item.path);
-    const hasActiveChild = hasChildren && item.children?.some((child: any) => isPathActive(child.path));
+    const hasActiveChild = hasChildren && item.children?.some(child => isPathActive(child.path));
 
     return (
       <div key={item.id} className="relative">
@@ -57,6 +52,8 @@ export function Sidebar({ className, collapsed = false, onToggleCollapse }: Side
           onClick={() => {
             if (hasChildren) {
               toggleExpanded(item.id);
+            } else {
+              navigate(item.path);
             }
           }}
           onToggleExpand={hasChildren ? () => toggleExpanded(item.id) : undefined}
@@ -65,7 +62,7 @@ export function Sidebar({ className, collapsed = false, onToggleCollapse }: Side
         
         {hasChildren && isExpanded && !collapsed && (
           <div className="ml-4 border-l border-border/50">
-            {item.children?.map((child: any) => renderNavItem(child, level + 1))}
+            {item.children?.map(child => renderNavItem(child, level + 1))}
           </div>
         )}
       </div>
@@ -77,7 +74,12 @@ export function Sidebar({ className, collapsed = false, onToggleCollapse }: Side
       initial={{ x: -300, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className={`flex flex-col relative overflow-hidden border-r border-border/30 backdrop-blur-xl ${collapsed ? 'w-16' : 'w-72'} h-full bg-gradient-to-b from-card/80 via-card/60 to-background/40 ${className || ''}`}
+      className={cn(
+        'flex flex-col relative overflow-hidden border-r border-border/30 backdrop-blur-xl',
+        collapsed ? 'w-16' : 'w-72',
+        'h-full bg-gradient-to-b from-card/80 via-card/60 to-background/40',
+        className
+      )}
       data-testid="sidebar"
     >
       {/* Animated Background Effects */}
@@ -95,7 +97,7 @@ export function Sidebar({ className, collapsed = false, onToggleCollapse }: Side
         />
       </div>
 
-      {/* Header Section */}
+      {/* Header Section with Enhanced Animation */}
       <motion.div 
         className="relative p-6 border-b border-border/30"
         initial={{ y: -20, opacity: 0 }}
@@ -123,14 +125,14 @@ export function Sidebar({ className, collapsed = false, onToggleCollapse }: Side
                       ]
                     }}
                     transition={{ duration: 2, repeat: Infinity }}
-                    className="w-10 h-10 bg-gradient-to-r from-primary to-primary rounded-xl flex items-center justify-center"
+                    className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center"
                   >
                     <Sparkles className="w-5 h-5 text-primary-foreground" />
                   </motion.div>
                 </div>
                 <div className="flex-1">
                   <motion.h1 
-                    className="font-bold text-xl bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent"
+                    className="font-bold text-xl text-gradient"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
@@ -154,7 +156,7 @@ export function Sidebar({ className, collapsed = false, onToggleCollapse }: Side
                 animate={{ scale: 1, rotate: 0 }}
                 exit={{ scale: 0, rotate: 180 }}
                 transition={{ duration: 0.3 }}
-                className="w-10 h-10 bg-gradient-to-r from-primary to-primary rounded-xl flex items-center justify-center mx-auto"
+                className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center mx-auto"
               >
                 <Zap className="w-5 h-5 text-primary-foreground" />
               </motion.div>
@@ -163,8 +165,8 @@ export function Sidebar({ className, collapsed = false, onToggleCollapse }: Side
         </div>
       </motion.div>
 
-      {/* Navigation */}
-      <nav className="relative flex-1 p-4 space-y-2 overflow-y-auto">
+      {/* Navigation with advanced styling and animations */}
+      <nav className="relative flex-1 p-4 space-y-2 overflow-y-auto scrollbar-hide">
         <motion.div 
           className="space-y-1"
           initial={{ opacity: 0 }}
@@ -188,9 +190,9 @@ export function Sidebar({ className, collapsed = false, onToggleCollapse }: Side
         </motion.div>
       </nav>
 
-      {/* User Menu */}
+      {/* User Menu with enhanced animations */}
       <motion.div 
-        className="relative p-4 border-t border-border/30"
+        className="relative p-4 border-t border-border/30 glass"
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 1.2, duration: 0.5 }}
@@ -198,7 +200,7 @@ export function Sidebar({ className, collapsed = false, onToggleCollapse }: Side
         <UserMenu collapsed={collapsed} />
       </motion.div>
 
-      {/* Collapse Toggle */}
+      {/* Advanced Collapse Toggle with animations */}
       {onToggleCollapse && (
         <motion.button
           initial={{ scale: 0, rotate: -180 }}
@@ -207,7 +209,10 @@ export function Sidebar({ className, collapsed = false, onToggleCollapse }: Side
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           onClick={onToggleCollapse}
-          className="absolute -right-4 top-24 w-8 h-8 bg-gradient-to-r from-primary to-primary rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hidden lg:flex group border-2 border-white/20"
+          className={cn(
+            'absolute -right-4 top-24 w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow hover:shadow-floating transition-all duration-300',
+            'hidden lg:flex group border-2 border-white/20'
+          )}
           data-testid="sidebar-toggle"
         >
           <motion.div
