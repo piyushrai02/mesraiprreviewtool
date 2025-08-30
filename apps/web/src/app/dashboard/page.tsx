@@ -8,6 +8,8 @@ import { AppSidebar } from '../../components/layout/AppSidebar';
 import { AppHeader } from '../../components/layout/AppHeader';
 import { StatsCard } from '../../components/dashboard/StatsCard';
 import { RecentActivity } from '../../components/dashboard/RecentActivity';
+import { LoginPage } from '../../components/features/auth/LoginPage';
+import { useAuth } from '../../components/providers/AuthProvider';
 import { 
   GitPullRequest, 
   Users, 
@@ -21,6 +23,24 @@ import {
 
 export default function DashboardPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Show login page if not authenticated
+  if (!isAuthenticated && !isLoading) {
+    return <LoginPage />;
+  }
+
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="h-screen w-full bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const statsData = [
     {
