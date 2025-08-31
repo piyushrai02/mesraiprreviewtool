@@ -269,27 +269,35 @@ app.post("/api/v1/webhooks/github", async (req, res) => {
         const githubUser = githubUsers[0];
 
         if (githubUser) {
-          const { RepositoryService } = await import('./services/repository.service');
-          const repositoryService = new RepositoryService();
-          
-          // Create installation record
-          const repositories = payload.repositories || [];
-          await repositoryService.createInstallation({
-            githubInstallationId: installation.id,
-            githubAccountId: installation.account.id,
-            githubAccountType: installation.account.type,
-            userId: githubUser.id,
-            repositories: repositories.map((repo: any) => ({
-              githubId: repo.id,
-              name: repo.name,
-              fullName: repo.full_name,
-              isPrivate: repo.private,
-              language: repo.language,
-              defaultBranch: repo.default_branch
-            }))
+          // Create installation record directly
+          const createdInstallation = await prisma.installation.create({
+            data: {
+              githubInstallationId: installation.id,
+              githubAccountId: installation.account.id,
+              githubAccountType: installation.account.type,
+              userId: githubUser.id,
+              status: 'active'
+            }
           });
 
-          console.log(`Installation created for user ${githubUser.id}`);
+          // Create repository records
+          const repositories = payload.repositories || [];
+          for (const repo of repositories) {
+            await prisma.repository.create({
+              data: {
+                githubId: repo.id,
+                name: repo.name,
+                fullName: repo.full_name,
+                isPrivate: repo.private,
+                language: repo.language,
+                defaultBranch: repo.default_branch || 'main',
+                installationId: createdInstallation.id,
+                status: 'active'
+              }
+            });
+          }
+
+          console.log(`Installation created for user ${githubUser.id} with ${repositories.length} repositories`);
         } else {
           console.warn('Could not find user for GitHub ID:', sender.id);
         }
@@ -311,17 +319,116 @@ app.post("/api/v1/webhooks/github", async (req, res) => {
   }
 });
 
+// GitHub installation callback endpoint - called after user installs GitHub App
+app.get("/api/v1/github/installation/callback", authMiddleware, async (req: any, res) => {
+  try {
+    const { installation_id, setup_action } = req.query;
+    
+    console.log(`Installation callback received:`, { installation_id, setup_action, userId: req.userId });
+    
+    if (setup_action === 'install' && installation_id) {
+      // Link the installation to the current user
+      console.log(`Linking installation ${installation_id} to user ${req.userId}`);
+      
+      // Update installation with user ID
+      const updateResult = await prisma.installation.updateMany({
+        where: {
+          githubInstallationId: parseInt(installation_id.toString()),
+          userId: null
+        },
+        data: {
+          userId: req.userId
+        }
+      });
+      
+      console.log(`Installation ${installation_id} linked to user ${req.userId}. Updated ${updateResult.count} records.`);
+      
+      // If no existing installation was found, create a new one
+      if (updateResult.count === 0) {
+        console.log(`No existing installation found, creating new record for installation ${installation_id}`);
+        await prisma.installation.create({
+          data: {
+            githubInstallationId: parseInt(installation_id.toString()),
+            githubAccountId: 0, // Will be updated by webhook
+            githubAccountType: 'User',
+            status: 'active',
+            userId: req.userId
+          }
+        });
+      }
+    }
+    
+    // Redirect back to dashboard
+    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+    res.redirect(`${baseUrl}/dashboard?installed=true`);
+  } catch (error) {
+    console.error('Error processing installation callback:', error);
+    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+    res.redirect(`${baseUrl}/dashboard?error=installation_failed`);
+  }
+});
+
+// GitHub App installation URL endpoint  
+app.get("/api/v1/github/installations/new", authMiddleware, async (req: any, res) => {
+  try {
+    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+    const githubAppId = process.env.GITHUB_APP_ID;
+    
+    if (!githubAppId) {
+      return res.status(500).json({
+        success: false,
+        message: 'GitHub App ID not configured'
+      });
+    }
+    
+    // GitHub App installation URL with callback redirect
+    const callbackUrl = `${baseUrl}/api/v1/github/installation/callback`;
+    const installationUrl = `https://github.com/apps/mesrai-ai/installations/new?state=${req.userId}&redirect_uri=${encodeURIComponent(callbackUrl)}`;
+    
+    console.log(`Generated installation URL for user ${req.userId}:`, installationUrl);
+    
+    res.json({
+      success: true,
+      data: {
+        installationUrl
+      }
+    });
+  } catch (error) {
+    console.error('Error generating installation URL:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate installation URL'
+    });
+  }
+});
+
 // GitHub integration endpoints (dynamic database integration)
 app.get("/api/v1/github/repositories", authMiddleware, async (req: any, res) => {
   try {
-    const { RepositoryService } = await import('./services/repository.service');
-    const repositoryService = new RepositoryService();
-    
-    // Fetch user's actual connected repositories from database
-    const repositories = await repositoryService.getUserRepositories(req.userId);
+    // Query repositories directly to avoid import issues
+    const repositories = await prisma.$queryRaw<Array<{
+      id: number;
+      githubId: number;
+      name: string;
+      fullName: string;
+      isPrivate: boolean;
+      language: string | null;
+      defaultBranch: string;
+      status: string;
+      lastSyncAt: Date | null;
+      createdAt: Date;
+      updatedAt: Date;
+      installationId: number;
+    }>>`
+      SELECT r.* 
+      FROM repositories r
+      INNER JOIN installations i ON r."installationId" = i.id
+      WHERE i."userId" = ${req.userId} AND i.status = 'active' AND r.status = 'active'
+      ORDER BY r."updatedAt" DESC
+    `;
     
     // Transform to frontend format
-    const formattedRepositories = repositories.map((repo: any) => ({
+    const formattedRepositories = repositories.map((repo) => ({
       id: repo.id.toString(),
       githubId: repo.githubId,
       name: repo.name,
@@ -353,14 +460,32 @@ app.get("/api/v1/github/repositories", authMiddleware, async (req: any, res) => 
 
 app.get("/api/v1/github/reviews", authMiddleware, async (req: any, res) => {
   try {
-    const { RepositoryService } = await import('./services/repository.service');
-    const repositoryService = new RepositoryService();
-    
-    // Fetch user's actual review sessions from database
-    const reviews = await repositoryService.getUserReviews(req.userId);
+    // Query reviews directly to avoid import issues
+    const reviews = await prisma.$queryRaw<Array<{
+      id: number;
+      repositoryId: number;
+      pullRequestNumber: number;
+      githubPrId: number;
+      status: string;
+      title: string | null;
+      author: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+      completedAt: Date | null;
+      repositoryName: string;
+      repositoryFullName: string;
+    }>>`
+      SELECT rs.*, r.name as "repositoryName", r."fullName" as "repositoryFullName"
+      FROM review_sessions rs
+      INNER JOIN repositories r ON rs."repositoryId" = r.id
+      INNER JOIN installations i ON r."installationId" = i.id
+      WHERE i."userId" = ${req.userId} AND i.status = 'active'
+      ORDER BY rs."createdAt" DESC
+      LIMIT 50
+    `;
     
     // Transform to frontend format
-    const formattedReviews = reviews.map((review: any) => ({
+    const formattedReviews = reviews.map((review) => ({
       id: review.id,
       repositoryId: review.repositoryId.toString(),
       pullRequestNumber: review.pullRequestNumber,
@@ -392,15 +517,41 @@ app.get("/api/v1/github/reviews", authMiddleware, async (req: any, res) => {
 // GitHub dashboard statistics endpoint
 app.get("/api/v1/github/dashboard-stats", authMiddleware, async (req: any, res) => {
   try {
-    const { RepositoryService } = await import('./services/repository.service');
-    const repositoryService = new RepositoryService();
-    
-    // Fetch user's actual repository statistics from database
-    const stats = await repositoryService.getRepositoryStats(req.userId);
+    // Query stats directly to avoid import issues
+    const stats = await prisma.$queryRaw<Array<{
+      totalRepositories: bigint;
+      totalInstallations: bigint;
+      activeReviews: bigint;
+      completedReviews: bigint;
+    }>>`
+      SELECT 
+        COUNT(DISTINCT r.id) as "totalRepositories",
+        COUNT(DISTINCT i.id) as "totalInstallations",
+        COUNT(DISTINCT CASE WHEN rs.status IN ('queued', 'analyzing') THEN rs.id END) as "activeReviews",
+        COUNT(DISTINCT CASE WHEN rs.status = 'completed' THEN rs.id END) as "completedReviews"
+      FROM installations i
+      LEFT JOIN repositories r ON r."installationId" = i.id AND r.status = 'active'
+      LEFT JOIN review_sessions rs ON rs."repositoryId" = r.id
+      WHERE i."userId" = ${req.userId} AND i.status = 'active'
+    `;
+
+    const result = stats[0] || {
+      totalRepositories: BigInt(0),
+      totalInstallations: BigInt(0),
+      activeReviews: BigInt(0),
+      completedReviews: BigInt(0)
+    };
+
+    const formattedStats = {
+      totalRepositories: Number(result.totalRepositories),
+      totalInstallations: Number(result.totalInstallations),
+      activeReviews: Number(result.activeReviews),
+      completedReviews: Number(result.completedReviews)
+    };
 
     res.json({
       success: true,
-      data: stats,
+      data: formattedStats,
       message: 'Dashboard statistics fetched successfully'
     });
   } catch (error: any) {
