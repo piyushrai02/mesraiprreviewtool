@@ -907,6 +907,112 @@ app.post("/api/v1/github/test-installation", authMiddleware, async (req: any, re
   }
 });
 
+// Sync repositories from GitHub API for an installation
+app.post("/api/v1/github/sync-repositories", authMiddleware, async (req: any, res) => {
+  try {
+    console.log(`🔄 Syncing repositories for user ${req.userId}`);
+    
+    // Get user's active installations
+    const installations = await prisma.installation.findMany({
+      where: {
+        userId: req.userId,
+        status: 'active'
+      }
+    });
+    
+    if (installations.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No active GitHub App installations found'
+      });
+    }
+    
+    let totalSynced = 0;
+    
+    for (const installation of installations) {
+      console.log(`📡 Fetching repositories for installation ${installation.githubInstallationId}`);
+      
+      try {
+        // Fetch repositories directly from GitHub API using existing octokit
+        const { Octokit } = await import("octokit");
+        
+        const appOctokit = new Octokit({
+          auth: {
+            appId: process.env.GITHUB_APP_ID,
+            privateKey: process.env.GITHUB_APP_PRIVATE_KEY,
+            installationId: installation.githubInstallationId,
+          },
+        });
+        
+        const { data: reposResponse } = await appOctokit.rest.apps.listReposAccessibleToInstallation();
+        const repositories = reposResponse.repositories || [];
+        
+        console.log(`📚 Found ${repositories.length} repositories for installation ${installation.githubInstallationId}`);
+        
+        // Sync each repository to database
+        for (const repo of repositories) {
+          const existingRepo = await prisma.repository.findFirst({
+            where: { githubId: repo.id }
+          });
+          
+          if (!existingRepo) {
+            await prisma.repository.create({
+              data: {
+                githubId: repo.id,
+                name: repo.name,
+                fullName: repo.full_name,
+                isPrivate: repo.private,
+                language: repo.language,
+                defaultBranch: repo.default_branch || 'main',
+                installationId: installation.id,
+                status: 'active'
+              }
+            });
+            totalSynced++;
+            console.log(`➕ Added repository: ${repo.full_name}`);
+          } else {
+            // Update existing repository
+            await prisma.repository.update({
+              where: { id: existingRepo.id },
+              data: {
+                name: repo.name,
+                fullName: repo.full_name,
+                isPrivate: repo.private,
+                language: repo.language,
+                defaultBranch: repo.default_branch || 'main',
+                status: 'active',
+                updatedAt: new Date()
+              }
+            });
+            console.log(`🔄 Updated repository: ${repo.full_name}`);
+          }
+        }
+      } catch (githubError) {
+        console.error(`❌ Error fetching repositories for installation ${installation.githubInstallationId}:`, githubError);
+        // Continue with other installations
+      }
+    }
+    
+    console.log(`✅ Repository sync completed. ${totalSynced} new repositories added.`);
+    
+    res.json({
+      success: true,
+      message: `Synced repositories successfully`,
+      data: {
+        installationsProcessed: installations.length,
+        repositoriesAdded: totalSynced
+      }
+    });
+    
+  } catch (error) {
+    console.error('🔴 Error syncing repositories:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to sync repositories'
+    });
+  }
+});
+
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({ message: "API is running!", timestamp: new Date().toISOString() });
