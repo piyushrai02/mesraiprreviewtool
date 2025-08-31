@@ -195,7 +195,7 @@ authRouter.get("/me", authMiddleware, async (req: any, res) => {
     let isGitHubAppInstalled = false;
     try {
       // Import and use our repository service to check installations
-      const { RepositoryService } = await import('./services/repository.service');
+      const { RepositoryService } = await import('./services/repository.service.js');
       const repositoryService = new RepositoryService();
       isGitHubAppInstalled = await repositoryService.hasActiveInstallations(user.id);
     } catch (serviceError) {
@@ -248,7 +248,7 @@ app.use("/api/v1/auth", authRouter);
 // GitHub integration endpoints (dynamic database integration)
 app.get("/api/v1/github/repositories", authMiddleware, async (req: any, res) => {
   try {
-    const { RepositoryService } = await import('./services/repository.service');
+    const { RepositoryService } = await import('./services/repository.service.js');
     const repositoryService = new RepositoryService();
     
     // Fetch user's actual connected repositories from database
@@ -287,7 +287,7 @@ app.get("/api/v1/github/repositories", authMiddleware, async (req: any, res) => 
 
 app.get("/api/v1/github/reviews", authMiddleware, async (req: any, res) => {
   try {
-    const { RepositoryService } = await import('./services/repository.service');
+    const { RepositoryService } = await import('./services/repository.service.js');
     const repositoryService = new RepositoryService();
     
     // Fetch user's actual review sessions from database
@@ -326,7 +326,7 @@ app.get("/api/v1/github/reviews", authMiddleware, async (req: any, res) => {
 // GitHub dashboard statistics endpoint
 app.get("/api/v1/github/dashboard-stats", authMiddleware, async (req: any, res) => {
   try {
-    const { RepositoryService } = await import('./services/repository.service');
+    const { RepositoryService } = await import('./services/repository.service.js');
     const repositoryService = new RepositoryService();
     
     // Fetch user's actual repository statistics from database
@@ -347,19 +347,97 @@ app.get("/api/v1/github/dashboard-stats", authMiddleware, async (req: any, res) 
 });
 
 // GitHub App installation redirect endpoint
-app.get("/api/v1/github/installations/new", (req, res) => {
+app.get("/api/v1/github/installations/new", authMiddleware, (req: any, res) => {
   try {
-    // Hard-coded GitHub App name for security and reliability
-    const appName = 'mesrai-ai-review'; // Replace with your actual GitHub App name
-    const installationUrl = `https://github.com/apps/${appName}/installations/new`;
+    if (!process.env.GITHUB_APP_ID) {
+      return res.status(500).json({
+        success: false,
+        message: 'GitHub App not configured'
+      });
+    }
+
+    // Create installation URL with state parameter for security
+    const state = Buffer.from(JSON.stringify({ 
+      userId: req.userId, 
+      timestamp: Date.now() 
+    })).toString('base64');
     
-    // Perform server-side redirect to GitHub App installation page
-    res.redirect(installationUrl);
+    const installationUrl = `https://github.com/apps/${process.env.GITHUB_APP_NAME || 'mesrai-ai-review'}/installations/new?state=${state}`;
+    
+    res.json({
+      success: true,
+      data: { installationUrl },
+      message: 'Installation URL generated'
+    });
   } catch (error) {
-    console.error('Error redirecting to GitHub App installation:', error);
+    console.error('Error generating GitHub App installation URL:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to redirect to GitHub App installation'
+      message: 'Failed to generate installation URL'
+    });
+  }
+});
+
+// GitHub App installation callback endpoint
+app.get("/api/v1/github/installations/callback", async (req: any, res) => {
+  try {
+    const { installation_id, setup_action, state } = req.query;
+    
+    if (setup_action !== 'install' && setup_action !== 'update') {
+      return res.redirect(`${BASE_URL}?error=installation_cancelled`);
+    }
+
+    if (!installation_id) {
+      return res.redirect(`${BASE_URL}?error=no_installation_id`);
+    }
+
+    // Decode and verify state parameter
+    let userId;
+    try {
+      const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
+      userId = stateData.userId;
+      
+      // Verify timestamp is recent (within 10 minutes)
+      if (Date.now() - stateData.timestamp > 10 * 60 * 1000) {
+        throw new Error('State expired');
+      }
+    } catch (error) {
+      console.error('Invalid state parameter:', error);
+      return res.redirect(`${BASE_URL}?error=invalid_state`);
+    }
+
+    // Store installation data temporarily and redirect to frontend
+    // In production, this would be handled by webhooks
+    console.log(`GitHub App installed: installationId=${installation_id}, userId=${userId}`);
+    
+    res.redirect(`${BASE_URL}?installation_success=true&installation_id=${installation_id}`);
+  } catch (error) {
+    console.error('Error handling GitHub App installation callback:', error);
+    res.redirect(`${BASE_URL}?error=installation_failed`);
+  }
+});
+
+// Check installation status
+app.get("/api/v1/github/installations/status", authMiddleware, async (req: any, res) => {
+  try {
+    const { RepositoryService } = await import('./services/repository.service.js');
+    const repositoryService = new RepositoryService();
+    
+    const hasInstallations = await repositoryService.hasActiveInstallations(req.userId);
+    
+    res.json({
+      success: true,
+      data: { 
+        hasInstallations,
+        installationCount: hasInstallations ? 1 : 0 // Simplified for now
+      },
+      message: 'Installation status retrieved'
+    });
+  } catch (error) {
+    console.error('Error checking installation status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check installation status'
     });
   }
 });
