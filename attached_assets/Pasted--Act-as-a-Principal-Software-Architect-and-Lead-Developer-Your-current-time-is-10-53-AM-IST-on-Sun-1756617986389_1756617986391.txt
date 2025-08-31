@@ -1,0 +1,689 @@
+**Act as a Principal Software Architect and Lead Developer. Your current time is 10:53 AM IST on Sunday, August 31, 2025, in Lucknow, Uttar Pradesh, India.**
+
+
+
+**Project Context:**
+
+You are the lead architect for "Mesrai AI," an enterprise-grade AI Pull Request Reviewer SaaS. The project is built on a professional monorepo architecture with a React frontend (`apps/web`), a Node.js backend (`apps/api`), a background job processor (`apps/worker`), and several shared packages (`packages/shared`, `packages/ui`). We have already established a foundation for GitHub App integration, user authentication, and a basic dashboard UI.
+
+
+
+**Primary Mission:**
+
+Your mission is to execute the full implementation of the features detailed in the Product Requirements Document (PRD) provided below. You will be responsible for translating these product requirements into robust, scalable, and secure code, transforming the application into a fully-featured platform comparable to Coderabbit.
+
+
+
+---
+
+
+
+**MANDATORY DIRECTIVE: Analyze and Extend Existing Code**
+
+
+
+Before writing a single line of new code for any feature outlined in the PRD, you MUST first perform a comprehensive review of the existing codebase. Your primary directive is to leverage, extend, and refactor existing services, components, types, and infrastructure.
+
+
+
+**DO NOT CREATE REDUNDANT FUNCTIONALITY.**
+
+
+
+For every new task, your process must be:
+
+1.  **Identify Relevant Code:** Locate existing files that are related to the feature (e.g., `github-app.service.ts`, `RepositoryList.tsx`, `auth.middleware.ts`, etc.).
+
+2.  **Assess for Reusability:** Determine if existing functions, hooks, or components can be used or adapted.
+
+3.  **Propose a Plan:** Briefly state how you will integrate the new functionality into the existing structure before generating the code.
+
+
+
+---
+
+
+
+**Core Architectural and Development Principles to Uphold:**
+
+
+
+* **Scalability:** All long-running or computationally intensive tasks (e.g., fetching large PR diffs, running AI analysis, posting multiple comments) **must** be designed as asynchronous jobs and offloaded to the `apps/worker` via our BullMQ queue. The API must remain fast and responsive.
+
+* **Data Integrity:** The Prisma schema is the single source of truth. All new data models must be integrated into `prisma/schema.prisma`, and all database interactions must be handled through the Prisma client in the backend services.
+
+* **End-to-End Type Safety:** All new data structures, API payloads, and component props must be strictly typed. Shared types that are used by both the API and the web app **must** be defined in `packages/shared`.
+
+* **Security:** All new API endpoints must be protected by the appropriate authentication and authorization middleware. Continue to adhere to best practices for handling secrets and verifying all incoming data and webhook signatures.
+
+* **Component-Driven UI:** All new UI must be constructed from small, modular, and reusable React components. Leverage the existing `packages/ui` design system for primitive elements (Buttons, Cards, etc.) and follow the established feature-based structure in `apps/web/src/components/features`.
+
+* **Resilience and User Experience:** Every feature must include comprehensive error handling. All user-facing operations must have clear loading, empty, and error states. Background jobs must have retry logic and fail gracefully.
+
+
+
+---
+
+
+
+**Product Requirements Document (PRD)**
+
+
+
+Core Value Proposition
+
+CodeRabbit is an AI-powered code reviewer that delivers context-aware feedback on pull requests within minutes, reducing the time and effort needed for manual code reviews. The platform's unique selling point lies in its ability to provide human-like, intelligent code reviews that complement manual reviews while learning and adapting to team preferences over time.
+
+
+
+Target Audience
+
+Primary Personas:
+
+
+
+Individual Developers - Software engineers working on personal or open-source projects seeking automated code quality feedback
+
+Development Team Leads - Engineering managers overseeing code quality and team productivity
+
+DevOps Engineers - Infrastructure specialists integrating code review processes into CI/CD pipelines
+
+Enterprise Managers - Technical directors and CTOs managing large development teams requiring scalable code review solutions
+
+Open Source Maintainers - Project maintainers managing contributions from distributed teams
+
+Problem Solved
+
+CodeRabbit addresses critical pain points in the software development lifecycle:
+
+
+
+Manual Review Bottlenecks: Reduces time spent on repetitive code review tasks
+
+Inconsistent Code Quality: Applies dozens of open-source, industry-standard code analyzers to every commit
+
+Knowledge Transfer Gaps: Catches issues that manual reviews often miss through fresh AI perspective
+
+Scalability Challenges: Enables teams to maintain code quality as they grow
+
+Context Loss: Provides continuous learning that adapts to team coding standards and preferences
+
+2. Platform Features & Functionality (End-to-End)
+
+Core Review Engine
+
+Automated Code Reviews
+
+
+
+Description: AI-powered analysis that runs relevant code changes through an array of industry-standard code linters, security analyzers, and other tools, synthesizing output into high-level analysis
+
+Plan Availability: All tiers (with usage limits on Free/Lite)
+
+Core Functionality:User creates pull request on supported Git platform
+
+CodeRabbit automatically triggers review within minutes
+
+AI analyzes code changes using multiple static analysis tools
+
+Results displayed as familiar pull-request comments
+
+Provides suggestions for improvements and identifies potential issues
+
+Use Case: Developer submits PR for a new API endpoint; CodeRabbit identifies security vulnerabilities, suggests performance optimizations, and flags potential edge cases
+
+Committable Suggestions
+
+
+
+Description: Actionable suggestions with a Committable Suggestion feature that allows direct implementation
+
+Plan Availability: Pro and Enterprise
+
+Core Functionality:CodeRabbit provides code improvement suggestions
+
+Developer can accept suggestions with one-click
+
+Changes are automatically committed to the branch
+
+Maintains full git history and attribution
+
+Use Case: CodeRabbit suggests variable renaming for better readability; developer accepts suggestion and change is automatically applied to the codebase
+
+Interactive AI Assistant
+
+Chat Functionality
+
+
+
+Description: Natural-language conversation system where developers can interact with CodeRabbit bot within pull request interface to add context, ask questions, or have the bot generate code
+
+Plan Availability: All tiers
+
+Core Functionality:Developer comments on PR mentioning @coderabbitai
+
+Can ask specific questions about code changes
+
+Request explanations for suggestions
+
+Ask for alternative implementations
+
+Provide feedback to improve future reviews
+
+Use Case: Developer asks "Why did you suggest using async/await here?" and CodeRabbit explains performance benefits and provides examples
+
+Learning & Adaptation
+
+
+
+Description: System learns from user input and improves suggestions, adapting to team's code style and review preferences
+
+Plan Availability: All tiers
+
+Core Functionality:CodeRabbit tracks feedback from team interactions
+
+Adjusts review style based on accepted/rejected suggestions
+
+Learns team-specific coding standards
+
+Applies learned preferences to future reviews
+
+Use Case: Team consistently uses 2-space indentation; CodeRabbit learns this preference and stops suggesting 4-space formatting
+
+Configuration & Customization
+
+Custom Review Instructions
+
+
+
+Description: Path-based instructions for how CodeRabbit should review different files within codebase
+
+Plan Availability: Pro and Enterprise
+
+Core Functionality:Add .coderabbit.yaml file to repository
+
+Define file-specific review rules
+
+Set language-specific guidelines
+
+Configure ignore patterns
+
+Customize review depth and focus areas
+
+Use Case: Configure stricter security reviews for authentication modules while allowing more flexibility in test files
+
+Web UI Configuration
+
+
+
+Description: Browser-based interface for setting review preferences and managing repositories
+
+Plan Availability: All tiers
+
+Core Functionality:Repository management dashboard
+
+Review preference settings
+
+Team member management
+
+Usage analytics and insights
+
+Integration configuration
+
+Use Case: Team lead configures review intensity levels and assigns specific reviewers for different project components
+
+Integration Capabilities
+
+Git Platform Integration
+
+
+
+Description: Rapid integration with GitHub, GitHub Enterprise, GitLab, GitLab Self-Managed, Azure DevOps, and Bitbucket Cloud
+
+Plan Availability: All tiers
+
+Core Functionality:One-click app installation on Git platform
+
+Automatic webhook configuration
+
+Seamless PR/MR integration
+
+Native comment system utilization
+
+Use Case: Install CodeRabbit app on GitHub organization; all repositories automatically get AI code reviews on new pull requests
+
+Issue Management Integration
+
+
+
+Description: Integration with GitHub Issues, GitLab Issues, Jira, and Linear for bi-directional issue tracking and automated issue creation
+
+Plan Availability: Pro and Enterprise
+
+Core Functionality:Automatic issue creation from code review feedback
+
+Link PRs to existing issues
+
+Track issue completion through code changes
+
+Convert review comments to actionable tickets
+
+Use Case: CodeRabbit identifies code quality concerns and creates issues directly in Linear with code context
+
+CI/CD Pipeline Integration
+
+
+
+Description: Integration with CI/CD workflows to identify common misconfigurations and execute static analysis automatically
+
+Plan Availability: Pro and Enterprise
+
+Core Functionality:Hooks into existing CI/CD pipelines
+
+Provides status checks for PRs
+
+Blocks merges based on code quality thresholds
+
+Automated reporting and notifications
+
+Use Case: CodeRabbit prevents deployment disruptions by identifying misconfigurations in CI/CD workflows
+
+Developer Tools
+
+VSCode Extension
+
+
+
+Description: Free VSCode extension bringing subset of core CodeRabbit features for local code review before pushing changes
+
+Plan Availability: Free standalone product
+
+Core Functionality:Real-time code analysis in editor
+
+Inline suggestions and corrections
+
+Pre-commit quality checks
+
+Local code optimization
+
+Use Case: Developer reviews and fixes code quality issues locally before creating pull request, reducing review cycles
+
+Analytics & Observability
+
+Code Contribution Dashboard
+
+
+
+Description: Observability dashboard of code-contribution activity
+
+Plan Availability: Pro and Enterprise
+
+Core Functionality:Team productivity metrics
+
+Code quality trends
+
+Review cycle time analysis
+
+Developer contribution insights
+
+Technical debt tracking
+
+Use Case: Engineering manager tracks team velocity improvements and identifies areas needing additional support
+
+3. User Stories
+
+Basic Functionality Stories
+
+US001: First-Time Setup
+
+As a development team lead, I want to install CodeRabbit on our GitHub organization in under 5 minutes, so that we can immediately start receiving automated code reviews without disrupting our existing workflow.
+
+US002: Automated Review
+
+As a software developer, I want CodeRabbit to automatically review my pull requests and provide actionable feedback within minutes, so that I can improve code quality before requesting human review.
+
+US003: Interactive Assistance
+
+As a junior developer, I want to ask CodeRabbit questions about its suggestions in natural language, so that I can understand the reasoning and learn better coding practices.
+
+US004: Custom Preferences
+
+As a senior developer, I want to teach CodeRabbit our team's specific coding standards through conversation, so that future reviews align with our established practices.
+
+US005: One-Click Fixes
+
+As a software engineer, I want to accept CodeRabbit's suggestions with a single click to automatically apply improvements, so that I can quickly address minor issues without manual editing.
+
+
+
+Advanced Feature Stories
+
+US006: Enterprise Security
+
+As a DevOps engineer, I want CodeRabbit to identify security vulnerabilities and compliance issues in our CI/CD pipelines, so that we can prevent security breaches before code reaches production.
+
+US007: Issue Integration
+
+As a product manager, I want CodeRabbit to automatically create tickets in Linear when it identifies significant code quality issues, so that we can track and prioritize technical debt systematically.
+
+US008: Team Analytics
+
+As a engineering director, I want detailed analytics on code quality trends and team productivity, so that I can make data-driven decisions about resource allocation and training needs.
+
+US009: Custom Configuration
+
+As a platform engineer, I want to configure different review intensities for different parts of our codebase (strict for core services, relaxed for experiments), so that reviews are appropriate for the code's importance.
+
+US010: Local Development
+
+As a full-stack developer, I want to use CodeRabbit's suggestions directly in my VSCode editor before committing changes, so that I can catch and fix issues early in my development process.
+
+
+
+4. Pricing Tier & Plan Analysis
+
+Pricing Structure Comparison
+
+FeatureFreeLiteProEnterpriseMonthly Price$0$12/month$24/monthCustom PricingAnnual Price$0$15/monthly$30/monthlyCustom PricingPublic RepositoriesPro tier features at no charge✅✅✅Private RepositoriesUnlimited code-change summariesLimitedUnlimitedUnlimitedCode Review CommentsBasicStandardAdvancedAdvancedCommittable Suggestions❌Limited✅✅Chat FunctionalityBasicBasicAdvancedAdvancedCustom Instructions❌Basic✅✅Issue Integration❌❌✅✅Analytics Dashboard❌Basic✅AdvancedCI/CD Integration❌❌✅✅Team Management❌Limited✅AdvancedSLA Support❌❌StandardPremiumSOC 2 Compliance✅✅✅✅Free TrialN/A14-day free trial14-day free trialCustom
+
+Upgrade Path Analysis
+
+Key Drivers for Free → Paid Migration:
+
+
+
+Private Repository Limitations: Free tier only provides code summaries for private repos
+
+Advanced Review Features: Missing committable suggestions and custom instructions
+
+Team Collaboration: Lack of team management and analytics features
+
+Integration Needs: No access to issue management or CI/CD integrations
+
+Lite → Pro Migration Drivers:
+
+
+
+Unlimited Usage: Removal of usage limitations on private repositories
+
+Advanced Integrations: Access to issue management systems (Jira, Linear)
+
+CI/CD Integration: Full pipeline integration capabilities
+
+Team Analytics: Comprehensive dashboard for team insights
+
+Custom Configuration: Advanced repository-specific settings
+
+Pro → Enterprise Migration Drivers:
+
+
+
+Scale Requirements: Support for large organizations with complex needs
+
+Advanced Analytics: Enhanced reporting and insights
+
+Premium Support: SLA guarantees and dedicated support
+
+Custom Features: Tailored integrations and specialized requirements
+
+Compliance Needs: Advanced security and compliance features
+
+Competitive Pricing Analysis
+
+At $15/user/month, CodeRabbit is positioned as one of the more affordable options in the AI code review market, making it accessible to small and medium-sized teams while providing enterprise-grade features.
+
+
+
+5. Integrations & Workflow
+
+Supported Platforms & Integrations
+
+Version Control Systems:
+
+
+
+GitHub (Cloud, Enterprise Cloud, Enterprise Server)
+
+GitLab (Cloud, Self-Managed)
+
+Azure DevOps
+
+Bitbucket Cloud
+
+Issue Management Systems:
+
+
+
+GitHub Issues
+
+GitLab Issues
+
+Jira
+
+Linear
+
+Development Tools:
+
+
+
+VSCode Extension (Free)
+
+Industry-standard code analyzers and linters
+
+CI/CD pipeline hooks
+
+CI/CD Pipeline Integration Workflow
+
+Setup Phase:Install CodeRabbit app on Git platform
+
+Configure webhook endpoints
+
+Set up repository access permissions
+
+Define review triggers and conditions
+
+Development Workflow:Developer creates feature branch
+
+Makes code changes locally
+
+(Optional) Uses VSCode extension for pre-commit review
+
+Pushes changes and creates pull request
+
+Automated Review Process:CodeRabbit automatically triggers within minutes of PR creation
+
+Runs code through multiple static analysis tools
+
+Generates comprehensive review with inline comments
+
+Provides summary of changes and potential issues
+
+Interactive Review Cycle:Developer interacts with CodeRabbit via PR comments
+
+Can ask questions, request clarifications, or provide feedback
+
+CodeRabbit learns from interactions and adjusts future reviews
+
+Committable suggestions can be applied directly
+
+Integration & Deployment:Integrates with CI/CD pipelines without disruption
+
+Provides status checks for merge blocking
+
+Creates issues in connected project management tools
+
+Updates analytics dashboard with review metrics
+
+Typical Developer Workflow Integration
+
+
+
+
+
+Local Development → VSCode Extension Review → Git Push → PR Creation → CodeRabbit Auto-Review → Developer Response → Interactive Chat → Apply Suggestions → Human Review → Merge → Analytics Update → Issue Creation (if needed)
+
+6. Competitive & Strategic Analysis
+
+Key Differentiators
+
+1. Conversational AI Interface
+
+Unlike traditional static analysis tools, CodeRabbit enables natural-language conversation within pull request comments, allowing developers to ask questions and provide feedback that improves future reviews.
+
+2. Learning & Adaptation
+
+CodeRabbit learns from user input and adapts to team's code style and review preferences over time, providing increasingly personalized and relevant feedback.
+
+3. Comprehensive Analysis
+
+Applies dozens of open-source, industry-standard code analyzers to every commit, providing broader coverage than single-tool solutions.
+
+4. Native Git Integration
+
+Implements code reviews as familiar pull-request comments rather than requiring separate interfaces or tools.
+
+5. Privacy-First Architecture
+
+All queries exist in-memory only with zero retention, no code used for LLM training, and SOC 2/GDPR compliance.
+
+6. Affordable Pricing
+
+$15/user/month pricing is one of the more affordable options in the market with comprehensive feature set.
+
+
+
+Competitive Landscape
+
+Direct Competitors:
+
+
+
+GitHub Copilot: Focuses on code generation vs. code review
+
+SonarQube: Traditional static analysis, less AI-driven
+
+CodeClimate: Quality metrics focus, limited conversational AI
+
+DeepCode (now Snyk Code): Security-focused, less comprehensive review
+
+Codacy: Automated code review but less interactive AI
+
+Competitive Advantages:
+
+
+
+More conversational and interactive than traditional tools
+
+Better learning capabilities than static analysis tools
+
+More affordable than enterprise-focused solutions
+
+Better Git integration than standalone tools
+
+Stronger privacy guarantees than cloud-based alternatives
+
+Potential Gaps & Opportunities
+
+Current Gaps:
+
+
+
+Mobile Platform Support: No mobile app for on-the-go code review
+
+Offline Capabilities: Limited functionality without internet connection
+
+Custom Model Training: No ability to train custom AI models on organization-specific code
+
+Advanced Security Scanning: May lack specialized security analysis tools
+
+Code Generation Features: Limited code generation compared to tools like GitHub Copilot
+
+Market Opportunities:
+
+1. Enhanced AI Capabilities
+
+
+
+Develop more sophisticated code generation features
+
+Add predictive analytics for code quality trends
+
+Implement advanced refactoring suggestions
+
+2. Expanded Platform Support
+
+
+
+Support for additional Git platforms (GitKraken, SourceForge)
+
+Integration with more project management tools (Asana, Monday.com)
+
+Support for design tools integration (Figma, Sketch)
+
+3. Advanced Analytics
+
+
+
+Team performance benchmarking
+
+Technical debt quantification
+
+ROI measurement tools
+
+Predictive maintenance recommendations
+
+4. Industry-Specific Solutions
+
+
+
+Healthcare/HIPAA compliance features
+
+Financial services regulatory compliance
+
+Automotive/safety-critical code analysis
+
+Gaming/performance optimization focus
+
+5. Educational Market
+
+
+
+Student-friendly pricing tiers
+
+Educational content integration
+
+Coding bootcamp partnerships
+
+Learning path recommendations
+
+6. Enterprise Features
+
+
+
+Advanced SSO/SAML integration
+
+Custom AI model training
+
+White-label solutions
+
+Advanced audit trails
+
+
+
+---
+
+
+
+**Your First Task:**
+
+
+
+After you have thoroughly read and internalized this entire brief and the PRD above, your first task is to provide a high-level technical implementation plan.
+
+
+
+1.  Break down the PRD into logical development epics (e.g., "PR Synchronization," "AI Analysis Engine," "Commenting & Feedback System").
+
+2.  For the **very first feature** in the PRD, outline the specific files you propose to create or modify.
+
+3.  **Ask for my confirmation before you begin writing the code for that first feature.**
