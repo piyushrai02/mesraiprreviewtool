@@ -1,0 +1,79 @@
+Act as a Senior Software Architect with expertise in full-stack development and enterprise-grade SaaS systems.
+
+Primary Objective:
+Your mission is to refactor the dashboard's "GitHub Setup" and "Start Review" functionality. You will transition the system from its current state of using static/mock API data to a fully dynamic, production-ready system powered by our live GitHub App integration. The end goal is a seamless user experience that mirrors the professional flow of platforms like Coderabbit.
+
+Core Constraint:
+Before implementing any new code, you must first perform a thorough review of the existing codebase to identify the current logic for fetching and displaying repository data. Your implementation must intelligently build upon or replace this existing functionality to maximize code reuse and maintain consistency.
+
+Phase 1: Code Review and Strategic Analysis
+
+Analyze the Backend:
+
+Thoroughly examine the API codebase in apps/api.
+
+Investigate the controllers and services responsible for returning user and repository data.
+
+Pinpoint the exact files and functions where the static/mock repository data is currently being generated and returned.
+
+Analyze the Frontend:
+
+Examine the dashboard components in apps/web/src/components/features/dashboard.
+
+Trace the data flow: identify the hooks or services used to call the API and how the static data is currently managed and rendered in the RepositoryList component.
+
+Deliverable:
+
+Before proceeding, provide a brief summary of your findings, listing the key files on both the frontend and backend that will be modified.
+
+Phase 2: Backend Refactoring for Live Data
+
+Implement Dynamic Repository Service:
+
+Navigate to the primary repository service file in apps/api/src/services/.
+
+Replace the static data logic with a database query using Prisma. The function must fetch all repositories from the Repository table that are linked to the authenticated user's Installation ID.
+
+Enhance User Authentication Status:
+
+Modify the /api/v1/auth/me endpoint. In addition to the user object, it must now return a boolean flag, isGitHubAppInstalled, which is true only if there is at least one active Installation record in the database associated with that user.
+
+Ensure Error Handling:
+
+Wrap all database queries and external API calls in try...catch blocks. If no repositories are found, return an empty array, not an error. If the database query fails, return a 500 Internal Server Error with a structured error message.
+
+Phase 3: Frontend Implementation of the Coderabbit Flow
+
+Refactor Data Fetching:
+
+In the frontend dashboard page (apps/web/src/app/dashboard/page.tsx), refactor the data-fetching logic. It should now call both the /api/v1/auth/me and /api/v1/repositories endpoints.
+
+The UI must gracefully handle all loading and error states for these API calls.
+
+Implement the Conditional "Setup" UI:
+
+Based on the isGitHubAppInstalled flag returned from the /api/v1/auth/me endpoint, implement the following conditional logic:
+
+If isGitHubAppInstalled is false: Do not display the repository list. Instead, render the InstallGitHubApp component, which presents a clear, primary call-to-action for the user to install the GitHub App.
+
+If isGitHubAppInstalled is true: Proceed to fetch repositories.
+
+Implement Dynamic Repository Display:
+
+If the app is installed, use the data from the /api/v1/repositories endpoint.
+
+If the returned array is empty: Display a well-designed empty state component. This component should inform the user they have installed the app but need to grant it access to specific repositories within their GitHub settings. Provide a link to the GitHub installation settings page.
+
+If the array contains repositories: Pass the live data to the RepositoryList component to render the actual list of the user's connected repositories.
+
+Activate "Start Review" Functionality:
+
+The "Start Review" button or functionality associated with each repository in the list should now be fully enabled, using the id or fullName from the live repository data to initiate the review process.
+
+Final Directives:
+
+Type Safety: Ensure all data flowing between the API and the UI is strictly typed using the shared Repository and ClientUser types from packages/shared.
+
+No Static Data: Confirm that all mock data related to repositories has been removed from both the frontend and backend.
+
+Professionalism: All new components and logic must adhere to the existing high standards of the project, including responsiveness and theme support.

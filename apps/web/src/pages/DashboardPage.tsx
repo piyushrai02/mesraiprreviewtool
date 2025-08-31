@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { 
   GitBranch, 
   Github, 
@@ -19,17 +20,23 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useGitHubData } from '@/hooks/useGitHubData';
 import { GitHubInstallButton } from '@/components/features/github/GitHubInstallButton';
 import { RepositoryStatus } from '@/components/features/dashboard/RepositoryStatus';
+import { GitHubSetupFlow } from '@/components/features/dashboard/GitHubSetupFlow';
+import { StartReviewModal } from '@/components/features/dashboard/StartReviewModal';
 import { Link } from 'wouter';
 
 export default function DashboardPage() {
   const { 
+    user,
     repositories, 
     reviews, 
     dashboardStats, 
     loading, 
     error,
-    refetch 
+    refetch,
+    startReview 
   } = useGitHubData();
+
+  const [isStartReviewModalOpen, setIsStartReviewModalOpen] = useState(false);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -77,6 +84,21 @@ export default function DashboardPage() {
               <div className="h-96 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
             </div>
           </div>
+
+          {/* Start Review Modal */}
+          <StartReviewModal 
+            isOpen={isStartReviewModalOpen}
+            onClose={() => setIsStartReviewModalOpen(false)}
+            repositories={repositories}
+            onStartReview={async (repositoryId: string, pullRequestNumber?: number) => {
+              try {
+                await startReview(repositoryId, pullRequestNumber || 1);
+                console.log('Review started successfully for repository:', repositoryId);
+              } catch (error) {
+                console.error('Failed to start review:', error);
+              }
+            }}
+          />
         </div>
       </div>
     );
@@ -106,6 +128,36 @@ export default function DashboardPage() {
     );
   }
 
+  // Check if GitHub App needs to be installed or repositories need to be connected
+  const isGitHubAppInstalled = user?.isGitHubAppInstalled || false;
+  const hasRepositories = repositories.length > 0;
+
+  // Show setup flow if app not installed or no repositories
+  if (!isGitHubAppInstalled || (isGitHubAppInstalled && !hasRepositories)) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6" data-testid="dashboard-page">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Header Section */}
+          <div className="text-center space-y-4">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent" data-testid="page-title">
+              Welcome to Mesrai AI
+            </h1>
+            <p className="text-lg text-slate-600 dark:text-slate-400" data-testid="page-description">
+              Get started with AI-powered code reviews for your GitHub repositories
+            </p>
+          </div>
+
+          {/* Setup Flow */}
+          <GitHubSetupFlow 
+            isGitHubAppInstalled={isGitHubAppInstalled}
+            hasRepositories={hasRepositories}
+            onRefresh={refetch}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6" data-testid="dashboard-page">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -126,14 +178,14 @@ export default function DashboardPage() {
                 GitHub Setup
               </Button>
             </Link>
-            {repositories.length === 0 ? (
-              <GitHubInstallButton data-testid="install-github-app" />
-            ) : (
-              <Button className="h-11 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" data-testid="button-new-review">
-                <Plus className="h-5 w-5 mr-2" />
-                Start Review
-              </Button>
-            )}
+            <Button 
+              className="h-11 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" 
+              data-testid="button-new-review"
+              onClick={() => setIsStartReviewModalOpen(true)}
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Start Review
+            </Button>
           </div>
         </div>
 

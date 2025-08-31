@@ -2,7 +2,16 @@ import { useState, useEffect } from 'react';
 import { githubApiService } from '@/lib/services/github.service';
 import { ConnectedRepository, ReviewSession } from '@shared/index';
 
+interface UserData {
+  id: number;
+  username: string;
+  email: string;
+  avatarUrl?: string;
+  isGitHubAppInstalled: boolean;
+}
+
 interface GitHubDataState {
+  user: UserData | null;
   repositories: ConnectedRepository[];
   reviews: ReviewSession[];
   dashboardStats: {
@@ -24,6 +33,7 @@ interface GitHubDataState {
 
 export function useGitHubData() {
   const [state, setState] = useState<GitHubDataState>({
+    user: null,
     repositories: [],
     reviews: [],
     dashboardStats: {
@@ -41,14 +51,46 @@ export function useGitHubData() {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
-      // Fetch data directly from API endpoints
+      // First fetch user data to check GitHub App installation status
+      const userResponse = await fetch('/api/v1/auth/me', {
+        credentials: 'include'
+      });
+
+      if (!userResponse.ok) {
+        throw new Error('User not authenticated');
+      }
+
+      const userData = await userResponse.json();
+      const user = userData.data;
+
+      // If GitHub App is not installed, only fetch user data
+      if (!user.isGitHubAppInstalled) {
+        setState({
+          user,
+          repositories: [],
+          reviews: [],
+          dashboardStats: {
+            totalRepositories: 0,
+            activeReviews: 0,
+            completedReviews: 0,
+            totalReviews: 0,
+            recentActivity: [],
+          },
+          loading: false,
+          error: null,
+        });
+        return;
+      }
+
+      // If GitHub App is installed, fetch all data
       const [repositoriesResponse, reviewsResponse, dashboardStatsResponse] = await Promise.all([
-        fetch('/api/v1/github/repositories').then(r => r.json()),
-        fetch('/api/v1/github/reviews').then(r => r.json()),
-        fetch('/api/v1/github/dashboard-stats').then(r => r.json()),
+        fetch('/api/v1/github/repositories', { credentials: 'include' }).then(r => r.json()),
+        fetch('/api/v1/github/reviews', { credentials: 'include' }).then(r => r.json()),
+        fetch('/api/v1/github/dashboard-stats', { credentials: 'include' }).then(r => r.json()),
       ]);
 
       setState({
+        user,
         repositories: repositoriesResponse.data || [],
         reviews: reviewsResponse.data || [],
         dashboardStats: dashboardStatsResponse.data || {
