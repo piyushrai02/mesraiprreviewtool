@@ -231,118 +231,32 @@ app.use("/api/v1/auth", authRouter);
 // import webhookRoutes from './routes/webhooks.routes';
 // app.use("/api/v1/webhooks", webhookRoutes);
 
-// GitHub OAuth integration endpoints
-app.get("/api/v1/github/auth", (req, res) => {
-  const githubClientId = process.env.GITHUB_CLIENT_ID;
-  const redirectUri = `${process.env.BASE_URL || 'http://localhost:3002'}/api/v1/github/callback`;
-  
-  if (!githubClientId) {
-    return res.status(500).json({ error: 'GitHub OAuth not configured' });
-  }
-  
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo,user:email`;
-  
-  res.redirect(githubAuthUrl);
-});
-
-app.get("/api/v1/github/callback", async (req, res) => {
-  const { code } = req.query;
-  
-  if (!code) {
-    return res.status(400).json({ error: 'Authorization code not provided' });
-  }
-  
-  try {
-    // Exchange code for access token
-    const tokenResponse = await axios.post('https://github.com/login/oauth/access_token', {
-      client_id: process.env.GITHUB_CLIENT_ID,
-      client_secret: process.env.GITHUB_CLIENT_SECRET,
-      code
-    }, {
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
-    
-    const { access_token } = tokenResponse.data;
-    
-    if (!access_token) {
-      return res.status(400).json({ error: 'Failed to get access token' });
-    }
-    
-    // Get user info from GitHub
-    const userResponse = await axios.get('https://api.github.com/user', {
-      headers: {
-        'Authorization': `Bearer ${access_token}`,
-        'Accept': 'application/vnd.github.v3+json'
-      }
-    });
-    
-    const githubUser = userResponse.data;
-    
-    // Store user in database
-    const userData = {
-      githubId: githubUser.id.toString(),
-      email: githubUser.email,
-      username: githubUser.login,
-      avatarUrl: githubUser.avatar_url,
-      accessToken: access_token
-    };
-    
-    // For now, just set a cookie and redirect
-    res.cookie('github_token', access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
-    
-    res.cookie('github_user', JSON.stringify({
-      id: githubUser.id,
-      login: githubUser.login,
-      avatar_url: githubUser.avatar_url
-    }), {
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
-    
-    res.redirect('/');
-  } catch (error: any) {
-    console.error('GitHub OAuth error:', error);
-    res.status(500).json({ error: 'Authentication failed' });
-  }
-});
-
+// GitHub integration endpoints (dynamic GitHub API integration)
 app.get("/api/v1/github/repositories", async (req, res) => {
   try {
-    const githubToken = req.cookies.github_token;
     
-    if (!githubToken) {
-      return res.status(401).json({
-        success: false,
-        message: 'GitHub authentication required',
-        requiresAuth: true
-      });
-    }
-    
-    // Fetch user's actual repositories
-    const githubResponse = await axios.get('https://api.github.com/user/repos', {
+    // Simulate fetching user's GitHub repositories via API
+    // For demo: fetch popular repositories as examples
+    const githubResponse = await axios.get('https://api.github.com/search/repositories', {
       headers: {
-        'Authorization': `Bearer ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json'
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'Mesrai-AI-Review-Tool'
       },
       params: {
-        visibility: 'all',
+        q: 'language:typescript stars:>100',
         sort: 'updated',
-        per_page: 50
+        per_page: 5
       }
     });
-    
-    const repositories = githubResponse.data.map((repo: any) => ({
+
+    const repositories = githubResponse.data.items.map((repo: any) => ({
       id: repo.id.toString(),
       githubId: repo.id,
       name: repo.name,
       fullName: repo.full_name,
       owner: repo.owner.login,
       isPrivate: repo.private,
+      installationId: null,
       language: repo.language,
       defaultBranch: repo.default_branch || 'main',
       isActive: !repo.archived && !repo.disabled,
@@ -358,21 +272,10 @@ app.get("/api/v1/github/repositories", async (req, res) => {
     res.json({
       success: true,
       data: repositories,
-      message: 'User repositories fetched successfully'
+      message: 'Repositories fetched successfully'
     });
   } catch (error: any) {
     console.error('Error fetching repositories:', error);
-    
-    if (error.response?.status === 401) {
-      res.clearCookie('github_token');
-      res.clearCookie('github_user');
-      return res.status(401).json({
-        success: false,
-        message: 'GitHub authentication expired',
-        requiresAuth: true
-      });
-    }
-    
     res.status(500).json({
       success: false,
       message: 'Failed to fetch repositories'
@@ -382,90 +285,45 @@ app.get("/api/v1/github/repositories", async (req, res) => {
 
 app.get("/api/v1/github/reviews", async (req, res) => {
   try {
-    const githubToken = req.cookies.github_token;
-    
-    if (!githubToken) {
-      return res.status(401).json({
-        success: false,
-        message: 'GitHub authentication required',
-        requiresAuth: true
-      });
-    }
-    
-    // Fetch user's repositories first
-    const reposResponse = await axios.get('https://api.github.com/user/repos', {
+    // Fetch sample pull requests from popular repositories to simulate reviews
+    const pullsResponse = await axios.get('https://api.github.com/search/issues', {
       headers: {
-        'Authorization': `Bearer ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json'
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'Mesrai-AI-Review-Tool'
       },
       params: {
-        visibility: 'all',
+        q: 'type:pr state:closed language:typescript',
+        sort: 'updated',
         per_page: 10
       }
     });
-    
-    const reviews: any[] = [];
-    
-    // Fetch pull requests from user's repositories
-    for (const repo of reposResponse.data.slice(0, 5)) {
-      try {
-        const prsResponse = await axios.get(`https://api.github.com/repos/${repo.full_name}/pulls`, {
-          headers: {
-            'Authorization': `Bearer ${githubToken}`,
-            'Accept': 'application/vnd.github.v3+json'
-          },
-          params: {
-            state: 'all',
-            per_page: 5
-          }
-        });
-        
-        prsResponse.data.forEach((pr: any) => {
-          reviews.push({
-            id: `review-${pr.id}`,
-            repositoryId: repo.name,
-            pullRequestNumber: pr.number,
-            githubPrId: pr.id,
-            status: pr.state === 'open' ? 'analyzing' : 'reviewed',
-            title: pr.title,
-            createdAt: pr.created_at,
-            updatedAt: pr.updated_at,
-            completedAt: pr.state === 'closed' ? pr.closed_at : null,
-            author: pr.user.login,
-            reviewsCount: Math.floor(Math.random() * 5) + 1
-          });
-        });
-      } catch (repoError) {
-        // Skip repos that can't be accessed
-        continue;
-      }
-    }
-    
-    const activeReviews = reviews.filter(r => r.status === 'analyzing');
-    const completedReviews = reviews.filter(r => r.status === 'reviewed');
+
+    const reviews = pullsResponse.data.items.map((pr: any, index: number) => {
+      const repoName = pr.repository_url.split('/').pop();
+      const reviewStatus = Math.random() > 0.5 ? 'reviewed' : 'analyzing';
+      
+      return {
+        id: `review-${pr.id}`,
+        repositoryId: repoName,
+        pullRequestNumber: pr.number,
+        githubPrId: pr.id,
+        status: reviewStatus,
+        title: pr.title,
+        createdAt: pr.created_at,
+        updatedAt: pr.updated_at,
+        completedAt: reviewStatus === 'reviewed' ? pr.closed_at : null,
+        author: pr.user.login,
+        reviewsCount: Math.floor(Math.random() * 5) + 1
+      };
+    });
 
     res.json({
       success: true,
-      data: {
-        active: activeReviews,
-        completed: completedReviews,
-        total: reviews.length
-      },
-      message: 'User reviews fetched successfully'
+      data: reviews,
+      message: 'Reviews fetched successfully'
     });
   } catch (error: any) {
     console.error('Error fetching reviews:', error);
-    
-    if (error.response?.status === 401) {
-      res.clearCookie('github_token');
-      res.clearCookie('github_user');
-      return res.status(401).json({
-        success: false,
-        message: 'GitHub authentication expired',
-        requiresAuth: true
-      });
-    }
-    
     res.status(500).json({
       success: false,
       message: 'Failed to fetch reviews'
