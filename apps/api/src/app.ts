@@ -5,7 +5,28 @@ import { Router } from "express";
 import jwt from "jsonwebtoken";
 import axios from "axios";
 import { PrismaClient } from "@prisma/client";
+import { Octokit } from "octokit";
 // import githubRoutes from "./routes/github.routes";
+
+// Function to get GitHub App Octokit instance for installation
+async function getInstallationOctokit(installationId: number): Promise<Octokit> {
+  try {
+    const privateKey = process.env.GITHUB_APP_PRIVATE_KEY!.replace(/\\n/g, '\n');
+    
+    const octokit = new Octokit({
+      auth: {
+        appId: process.env.GITHUB_APP_ID!,
+        privateKey: privateKey,
+        installationId: installationId,
+      },
+    });
+    
+    return octokit;
+  } catch (error) {
+    console.error('Error creating installation Octokit:', error);
+    throw error;
+  }
+}
 
 const app = express();
 const PORT = 3002;
@@ -452,57 +473,74 @@ app.get(
   },
 );
 
-// GitHub integration endpoints (dynamic database integration)
+// GitHub integration endpoints (real GitHub API integration)
 app.get(
   "/api/v1/github/repositories",
   authMiddleware,
   async (req: any, res) => {
     try {
-      // Query repositories directly to avoid import issues
-      const repositories = await prisma.$queryRaw<
-        Array<{
-          id: number;
-          githubId: number;
-          name: string;
-          fullName: string;
-          isPrivate: boolean;
-          language: string | null;
-          defaultBranch: string;
-          status: string;
-          lastSyncAt: Date | null;
-          createdAt: Date;
-          updatedAt: Date;
-          installationId: number;
-        }>
-      >`
-      SELECT r.* 
-      FROM repositories r
-      INNER JOIN installations i ON r."installationId" = i.id
-      WHERE i."userId" = ${req.userId} AND i.status = 'active' AND r.status = 'active'
-      ORDER BY r."updatedAt" DESC
-    `;
+      console.log(`📚 Fetching real repositories for user ${req.userId}`);
+      
+      // Get user's active installations
+      const installations = await prisma.installation.findMany({
+        where: {
+          userId: req.userId,
+          status: 'active'
+        }
+      });
 
-      // Transform to frontend format
-      const formattedRepositories = repositories.map((repo) => ({
-        id: repo.id.toString(),
-        githubId: repo.githubId,
-        name: repo.name,
-        fullName: repo.fullName,
-        owner: repo.fullName.split("/")[0],
-        isPrivate: repo.isPrivate,
-        installationId: repo.installationId,
-        language: repo.language,
-        defaultBranch: repo.defaultBranch,
-        isActive: repo.status === "active",
-        lastSyncAt: repo.lastSyncAt?.toISOString(),
-        createdAt: repo.createdAt?.toISOString(),
-        updatedAt: repo.updatedAt?.toISOString(),
-      }));
+      if (installations.length === 0) {
+        return res.json({
+          success: true,
+          data: [],
+          message: "No GitHub App installations found"
+        });
+      }
+
+      // Fetch real repositories from GitHub for each installation
+      for (const installation of installations) {
+        try {
+          console.log(`🔍 Fetching repositories from GitHub for installation ${installation.githubInstallationId}`);
+          
+          // Use Octokit to get actual repositories  
+          const octokit = await getInstallationOctokit(installation.githubInstallationId);
+          const { data: reposResponse } = await octokit.rest.apps.listReposAccessibleToInstallation();
+          const repos = reposResponse.repositories || [];
+          
+          console.log(`📚 Found ${repos.length} actual repositories for installation ${installation.githubInstallationId}`);
+          
+          // Format each repository with real GitHub data
+          const formattedRepos = repos.map((repo: any) => ({
+            id: repo.id.toString(),
+            githubId: repo.id,
+            name: repo.name,
+            fullName: repo.full_name,
+            owner: repo.owner.login,
+            isPrivate: repo.private,
+            installationId: installation.id,
+            language: repo.language,
+            defaultBranch: repo.default_branch || 'main',
+            isActive: true,
+            description: repo.description,
+            htmlUrl: repo.html_url,
+            createdAt: repo.created_at,
+            updatedAt: repo.updated_at,
+            stargazersCount: repo.stargazers_count,
+            forksCount: repo.forks_count
+          }));
+          
+          allRepositories = [...allRepositories, ...formattedRepos];
+        } catch (githubError) {
+          console.error(`❌ Error fetching repositories for installation ${installation.githubInstallationId}:`, githubError);
+        }
+      }
+
+      console.log(`✅ Found ${allRepositories.length} total repositories from GitHub API`);
 
       res.json({
         success: true,
-        data: formattedRepositories,
-        message: "Repositories fetched successfully",
+        data: allRepositories,
+        message: "Repositories fetched successfully from GitHub",
       });
     } catch (error: any) {
       console.error("Error fetching repositories:", error);
@@ -578,39 +616,80 @@ app.get(
   authMiddleware,
   async (req: any, res) => {
     try {
-      // Query stats directly to avoid import issues
-      const stats = await prisma.$queryRaw<
+      console.log(`📊 Fetching dashboard stats for user ${req.userId}`);
+      
+      // Get user's active installations
+      const installations = await prisma.installation.findMany({
+        where: {
+          userId: req.userId,
+          status: 'active'
+        }
+      });
+
+      if (installations.length === 0) {
+        return res.json({
+          success: true,
+          data: {
+            totalRepositories: 0,
+            totalInstallations: 0,
+            activeReviews: 0,
+            completedReviews: 0,
+            totalReviews: 0,
+            recentActivity: []
+          },
+          message: "No GitHub App installations found"
+        });
+      }
+
+      // Fetch real repositories from GitHub for each installation
+      let totalRepositories = 0;
+
+      for (const installation of installations) {
+        try {
+          console.log(`🔍 Fetching repositories from GitHub for installation ${installation.githubInstallationId}`);
+          
+          // Use Octokit to get actual repositories
+          const octokit = await getInstallationOctokit(installation.githubInstallationId);
+          const { data: reposResponse } = await octokit.rest.apps.listReposAccessibleToInstallation();
+          const repos = reposResponse.repositories || [];
+          totalRepositories += repos.length;
+          console.log(`📚 Found ${repos.length} actual repositories for installation ${installation.githubInstallationId}`);
+        } catch (githubError) {
+          console.error(`❌ Error fetching repositories for installation ${installation.githubInstallationId}:`, githubError);
+        }
+      }
+
+      // Get review stats from database
+      const reviewStats = await prisma.$queryRaw<
         Array<{
-          totalRepositories: bigint;
-          totalInstallations: bigint;
           activeReviews: bigint;
           completedReviews: bigint;
         }>
       >`
-      SELECT 
-        COUNT(DISTINCT r.id) as "totalRepositories",
-        COUNT(DISTINCT i.id) as "totalInstallations",
-        COUNT(DISTINCT CASE WHEN rs.status IN ('queued', 'analyzing') THEN rs.id END) as "activeReviews",
-        COUNT(DISTINCT CASE WHEN rs.status = 'completed' THEN rs.id END) as "completedReviews"
-      FROM installations i
-      LEFT JOIN repositories r ON r."installationId" = i.id AND r.status = 'active'
-      LEFT JOIN review_sessions rs ON rs."repositoryId" = r.id
-      WHERE i."userId" = ${req.userId} AND i.status = 'active'
-    `;
+        SELECT 
+          COUNT(DISTINCT CASE WHEN rs.status IN ('queued', 'analyzing') THEN rs.id END) as "activeReviews",
+          COUNT(DISTINCT CASE WHEN rs.status = 'completed' THEN rs.id END) as "completedReviews"
+        FROM installations i
+        LEFT JOIN repositories r ON r."installationId" = i.id
+        LEFT JOIN review_sessions rs ON rs."repositoryId" = r.id
+        WHERE i."userId" = ${req.userId} AND i.status = 'active'
+      `;
 
-      const result = stats[0] || {
-        totalRepositories: BigInt(0),
-        totalInstallations: BigInt(0),
+      const reviewResult = reviewStats[0] || {
         activeReviews: BigInt(0),
         completedReviews: BigInt(0),
       };
 
       const formattedStats = {
-        totalRepositories: Number(result.totalRepositories),
-        totalInstallations: Number(result.totalInstallations),
-        activeReviews: Number(result.activeReviews),
-        completedReviews: Number(result.completedReviews),
+        totalRepositories: totalRepositories,
+        totalInstallations: installations.length,
+        activeReviews: Number(reviewResult.activeReviews),
+        completedReviews: Number(reviewResult.completedReviews),
+        totalReviews: Number(reviewResult.activeReviews) + Number(reviewResult.completedReviews),
+        recentActivity: []
       };
+
+      console.log(`📈 Dashboard stats:`, formattedStats);
 
       res.json({
         success: true,
