@@ -194,10 +194,16 @@ authRouter.get("/me", authMiddleware, async (req: any, res) => {
     // Check if user has active GitHub App installations
     let isGitHubAppInstalled = false;
     try {
-      // Import and use our repository service to check installations
-      const { RepositoryService } = await import('./services/repository.service.js');
-      const repositoryService = new RepositoryService();
-      isGitHubAppInstalled = await repositoryService.hasActiveInstallations(user.id);
+        // Query installations directly to avoid import issues
+      const installationResult = await prisma.$queryRaw<Array<{count: bigint}>>`
+        SELECT COUNT(*) as count 
+        FROM installations 
+        WHERE "userId" = ${user.id} AND status = 'active'
+      `;
+      
+      const count = Number(installationResult[0]?.count || 0);
+      isGitHubAppInstalled = count > 0;
+      console.log(`User ${user.id} has ${count} active installations`);
     } catch (serviceError) {
       console.warn('Could not check installation status:', serviceError);
       // Default to false if service is unavailable
@@ -241,14 +247,74 @@ authRouter.post("/logout", (req, res) => {
 app.use("/api/v1/auth", authRouter);
 // app.use("/api/v1/github", githubRoutes);
 
-// TODO: Enable webhook routes once dependency issues are resolved
-// import webhookRoutes from './routes/webhooks.routes';
-// app.use("/api/v1/webhooks", webhookRoutes);
+// GitHub webhook endpoint for installation events
+app.post("/api/v1/webhooks/github", async (req, res) => {
+  try {
+    const event = req.headers['x-github-event'];
+    const signature = req.headers['x-hub-signature-256'];
+    const payload = req.body;
+
+    console.log(`GitHub webhook received: ${event}`, payload);
+
+    // Handle installation events
+    if (event === 'installation' || event === 'installation_repositories') {
+      const { action, installation, sender } = payload;
+      
+      if (action === 'created' || action === 'added') {
+        // Find the user by GitHub ID
+        // Query users table directly with raw SQL
+        const githubUsers = await prisma.$queryRaw<Array<{id: number, githubId: string}>>`
+          SELECT id, "githubId" FROM users WHERE "githubId" = ${sender.id.toString()}
+        `;
+        const githubUser = githubUsers[0];
+
+        if (githubUser) {
+          const { RepositoryService } = await import('./services/repository.service');
+          const repositoryService = new RepositoryService();
+          
+          // Create installation record
+          const repositories = payload.repositories || [];
+          await repositoryService.createInstallation({
+            githubInstallationId: installation.id,
+            githubAccountId: installation.account.id,
+            githubAccountType: installation.account.type,
+            userId: githubUser.id,
+            repositories: repositories.map((repo: any) => ({
+              githubId: repo.id,
+              name: repo.name,
+              fullName: repo.full_name,
+              isPrivate: repo.private,
+              language: repo.language,
+              defaultBranch: repo.default_branch
+            }))
+          });
+
+          console.log(`Installation created for user ${githubUser.id}`);
+        } else {
+          console.warn('Could not find user for GitHub ID:', sender.id);
+        }
+      } else if (action === 'deleted') {
+        // Handle installation deletion
+        await prisma.$executeRaw`
+          UPDATE installations 
+          SET status = 'deleted', "updatedAt" = NOW()
+          WHERE "githubInstallationId" = ${installation.id}
+        `;
+        console.log(`Installation ${installation.id} marked as deleted`);
+      }
+    }
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(500).json({ success: false, error: String(error) });
+  }
+});
 
 // GitHub integration endpoints (dynamic database integration)
 app.get("/api/v1/github/repositories", authMiddleware, async (req: any, res) => {
   try {
-    const { RepositoryService } = await import('./services/repository.service.js');
+    const { RepositoryService } = await import('./services/repository.service');
     const repositoryService = new RepositoryService();
     
     // Fetch user's actual connected repositories from database
@@ -287,7 +353,7 @@ app.get("/api/v1/github/repositories", authMiddleware, async (req: any, res) => 
 
 app.get("/api/v1/github/reviews", authMiddleware, async (req: any, res) => {
   try {
-    const { RepositoryService } = await import('./services/repository.service.js');
+    const { RepositoryService } = await import('./services/repository.service');
     const repositoryService = new RepositoryService();
     
     // Fetch user's actual review sessions from database
@@ -326,7 +392,7 @@ app.get("/api/v1/github/reviews", authMiddleware, async (req: any, res) => {
 // GitHub dashboard statistics endpoint
 app.get("/api/v1/github/dashboard-stats", authMiddleware, async (req: any, res) => {
   try {
-    const { RepositoryService } = await import('./services/repository.service.js');
+    const { RepositoryService } = await import('./services/repository.service');
     const repositoryService = new RepositoryService();
     
     // Fetch user's actual repository statistics from database
@@ -406,9 +472,22 @@ app.get("/api/v1/github/installations/callback", async (req: any, res) => {
       return res.redirect(`${BASE_URL}?error=invalid_state`);
     }
 
-    // Store installation data temporarily and redirect to frontend
-    // In production, this would be handled by webhooks
-    console.log(`GitHub App installed: installationId=${installation_id}, userId=${userId}`);
+    // Create installation record immediately upon callback
+    try {
+      const { RepositoryService } = await import('./services/repository.service');
+      const repositoryService = new RepositoryService();
+      
+      await repositoryService.createInstallation({
+        githubInstallationId: parseInt(installation_id),
+        githubAccountId: userId, // Using userId as account ID for now
+        githubAccountType: 'User',
+        userId: userId
+      });
+      
+      console.log(`Installation ${installation_id} created for user ${userId}`);
+    } catch (installError) {
+      console.error('Error creating installation record:', installError);
+    }
     
     res.redirect(`${BASE_URL}?installation_success=true&installation_id=${installation_id}`);
   } catch (error) {
@@ -417,10 +496,47 @@ app.get("/api/v1/github/installations/callback", async (req: any, res) => {
   }
 });
 
+// Manual installation endpoint for testing/debugging
+app.post("/api/v1/github/installations/manual", authMiddleware, async (req: any, res) => {
+  try {
+    const { githubInstallationId } = req.body;
+    
+    if (!githubInstallationId) {
+      return res.status(400).json({
+        success: false,
+        message: 'GitHub installation ID is required'
+      });
+    }
+
+    const { RepositoryService } = await import('./services/repository.service');
+    const repositoryService = new RepositoryService();
+    
+    // Create installation record manually
+    const installation = await repositoryService.createInstallation({
+      githubInstallationId: parseInt(githubInstallationId),
+      githubAccountId: req.userId,
+      githubAccountType: 'User',
+      userId: req.userId
+    });
+    
+    res.json({
+      success: true,
+      data: installation,
+      message: 'Installation created successfully'
+    });
+  } catch (error) {
+    console.error('Error creating manual installation:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create installation'
+    });
+  }
+});
+
 // Check installation status
 app.get("/api/v1/github/installations/status", authMiddleware, async (req: any, res) => {
   try {
-    const { RepositoryService } = await import('./services/repository.service.js');
+    const { RepositoryService } = await import('./services/repository.service');
     const repositoryService = new RepositoryService();
     
     const hasInstallations = await repositoryService.hasActiveInstallations(req.userId);
