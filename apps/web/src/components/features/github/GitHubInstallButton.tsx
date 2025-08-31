@@ -52,23 +52,46 @@ export function GitHubInstallButton({
     'Receive webhooks for pull request events'
   ];
 
+  const handleInstallClick = async () => {
+    try {
+      const response = await fetch('/api/v1/github/installations/new', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get installation URL');
+      }
+
+      const data = await response.json();
+      if (data.success && data.data.installationUrl) {
+        // Open GitHub App installation in current window
+        window.location.href = data.data.installationUrl;
+      } else {
+        throw new Error(data.message || 'Failed to get installation URL');
+      }
+    } catch (error) {
+      console.error('Error initiating GitHub App installation:', error);
+      alert('Failed to start GitHub App installation. Please try again.');
+    }
+  };
+
   if (!showDialog) {
     return (
-      <a 
-        href="/api/v1/github/installations/new"
-        className={`inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 
-          ${variant === 'default' ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 
-            variant === 'outline' ? 'border border-input bg-background hover:bg-accent hover:text-accent-foreground' :
-            'bg-secondary text-secondary-foreground hover:bg-secondary/80'}
-          ${size === 'sm' ? 'h-9 px-3' : size === 'lg' ? 'h-11 px-8' : 'h-10 px-4 py-2'}
-          ${className}
-        `}
+      <Button
+        onClick={handleInstallClick}
+        variant={variant}
+        size={size}
+        className={className}
         data-testid="github-install-button-direct"
       >
         <Github className="h-4 w-4" />
         Install GitHub App
         <ExternalLink className="h-4 w-4" />
-      </a>
+      </Button>
     );
   }
 
@@ -157,15 +180,15 @@ export function GitHubInstallButton({
             <Button variant="outline" onClick={() => setIsOpen(false)} data-testid="button-cancel">
               Cancel
             </Button>
-            <a 
-              href="/api/v1/github/installations/new"
-              className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+            <Button 
+              onClick={handleInstallClick}
+              className="flex-1"
               data-testid="button-install"
             >
               <Github className="h-4 w-4" />
               Install on GitHub
               <ExternalLink className="h-4 w-4" />
-            </a>
+            </Button>
           </div>
         </div>
       </DialogContent>
