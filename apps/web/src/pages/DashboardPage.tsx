@@ -130,7 +130,7 @@ export default function DashboardPage() {
 
   // Check if GitHub App needs to be installed or repositories need to be connected
   const isGitHubAppInstalled = user?.isGitHubAppInstalled || false;
-  const hasRepositories = repositories.length > 0;
+  const hasRepositories = (repositories || []).length > 0;
 
   // Show setup flow if app not installed or no repositories
   if (!isGitHubAppInstalled || (isGitHubAppInstalled && !hasRepositories)) {
@@ -280,7 +280,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {repositories.length === 0 ? (
+        {(repositories || []).length === 0 ? (
           /* Empty State */
           <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl shadow-lg" data-testid="empty-state">
             <div className="max-w-md mx-auto space-y-6">
@@ -376,9 +376,9 @@ export default function DashboardPage() {
                       </Button>
                     </div>
                   ))}
-                  {repositories.length > 5 && (
+                  {(repositories || []).length > 5 && (
                     <Button variant="outline" className="w-full mt-4" data-testid="button-view-all-repos">
-                      View All Repositories ({repositories.length})
+                      View All Repositories ({(repositories || []).length})
                     </Button>
                   )}
                 </div>
@@ -443,7 +443,7 @@ export default function DashboardPage() {
                       </div>
                     );
                   })}
-                  {repositories.length > 0 && reviews.length === 0 && (
+                  {(repositories || []).length > 0 && (reviews || []).length === 0 && (
                     <div className="text-center py-8" data-testid="reviews-empty">
                       <div className="h-12 w-12 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center mx-auto mb-3">
                         <Zap className="h-6 w-6 text-gray-400" />
@@ -460,7 +460,7 @@ export default function DashboardPage() {
         )}
 
         {/* Recent Activity */}
-        {dashboardStats.recentActivity.length > 0 && (
+        {(dashboardStats?.recentActivity || []).length > 0 && (
           <Card className="border-0 shadow-lg bg-white dark:bg-slate-800" data-testid="recent-activity">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-3 text-xl">
@@ -475,7 +475,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4" data-testid="activity-list">
-                {dashboardStats.recentActivity.slice(0, 8).map((activity) => (
+                {(dashboardStats?.recentActivity || []).slice(0, 8).map((activity) => (
                   <div
                     key={activity.id}
                     className="flex items-center space-x-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
