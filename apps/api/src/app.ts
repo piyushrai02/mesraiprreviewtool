@@ -497,6 +497,8 @@ app.get(
         });
       }
 
+      let allRepositories: any[] = [];
+
       // Fetch real repositories from GitHub for each installation
       for (const installation of installations) {
         try {
