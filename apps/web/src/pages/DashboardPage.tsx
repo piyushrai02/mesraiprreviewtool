@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useGitHubData } from '@/hooks/useGitHubData';
 import { GitHubInstallButton } from '@/components/features/github/GitHubInstallButton';
+import { RepositoryStatus } from '@/components/features/dashboard/RepositoryStatus';
 import { Link } from 'wouter';
 
 export default function DashboardPage() {

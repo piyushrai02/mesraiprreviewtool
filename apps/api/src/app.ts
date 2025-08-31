@@ -227,6 +227,10 @@ authRouter.post("/logout", (req, res) => {
 app.use("/api/v1/auth", authRouter);
 // app.use("/api/v1/github", githubRoutes);
 
+// TODO: Add webhook routes once Redis and worker dependencies are configured
+// import webhookRoutes from './routes/webhooks.routes';
+// app.use("/api/v1/webhooks", webhookRoutes);
+
 // GitHub integration endpoints (dynamic GitHub API integration)
 app.get("/api/v1/github/repositories", async (req, res) => {
   try {
