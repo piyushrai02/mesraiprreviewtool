@@ -41,23 +41,53 @@ export function useGitHubData() {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
-      // Fetch data directly from API endpoints
-      const [repositoriesResponse, reviewsResponse, dashboardStatsResponse] = await Promise.all([
+      // Fetch repositories and reviews
+      const [repositoriesResponse, reviewsResponse] = await Promise.all([
         fetch('/api/v1/github/repositories').then(r => r.json()),
         fetch('/api/v1/github/reviews').then(r => r.json()),
-        fetch('/api/v1/github/dashboard-stats').then(r => r.json()),
       ]);
 
+      // Check if authentication is required
+      if (repositoriesResponse.requiresAuth || reviewsResponse.requiresAuth) {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: 'GitHub authentication required',
+        }));
+        return;
+      }
+
+      const repositories = repositoriesResponse.data || [];
+      const reviews = reviewsResponse.data || { active: [], completed: [], total: 0 };
+
+      // Calculate dashboard stats from the data
+      const dashboardStats = {
+        totalRepositories: repositories.length,
+        activeReviews: reviews.active?.length || 0,
+        completedReviews: reviews.completed?.length || 0,
+        totalReviews: reviews.total || 0,
+        recentActivity: [
+          ...repositories.slice(0, 3).map((repo: any) => ({
+            id: `repo-${repo.id}`,
+            type: 'repo_connected' as const,
+            repository: repo.fullName,
+            timestamp: repo.lastSyncAt || repo.updatedAt,
+            message: `Connected repository ${repo.name}`,
+          })),
+          ...reviews.active?.slice(0, 2).map((review: any) => ({
+            id: `review-${review.id}`,
+            type: 'review_started' as const,
+            repository: review.repositoryId,
+            timestamp: review.createdAt,
+            message: `Started review for PR #${review.pullRequestNumber}`,
+          })) || [],
+        ],
+      };
+
       setState({
-        repositories: repositoriesResponse.data || [],
-        reviews: reviewsResponse.data || [],
-        dashboardStats: dashboardStatsResponse.data || {
-          totalRepositories: 0,
-          activeReviews: 0,
-          completedReviews: 0,
-          totalReviews: 0,
-          recentActivity: [],
-        },
+        repositories,
+        reviews: [...(reviews.active || []), ...(reviews.completed || [])],
+        dashboardStats,
         loading: false,
         error: null,
       });
