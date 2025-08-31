@@ -9,7 +9,7 @@ import {
   type Repository,
   type Installation,
   type User
-} from '../../../../shared/schema';
+} from '../../../../shared/schema.js';
 
 export class RepositoryService {
   private db;
