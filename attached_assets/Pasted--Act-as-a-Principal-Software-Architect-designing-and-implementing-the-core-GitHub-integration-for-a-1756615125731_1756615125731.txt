@@ -1,0 +1,95 @@
+**Act as a Principal Software Architect designing and implementing the core GitHub integration for a mission-critical, enterprise-grade SaaS application.**
+
+**Architectural Overview:**
+We will implement a highly scalable and resilient webhook processing system using an asynchronous job queue (BullMQ with Redis). The public-facing API's sole responsibility for webhooks will be to validate them, acknowledge receipt instantly with a `202 Accepted` status, and enqueue a job. A separate, horizontally-scalable `worker` application will consume these jobs, interact with the GitHub API, and perform database mutations. This decouples our system from GitHub's latency, ensures high availability, and provides robust error handling with retries and dead-letter queues. All sensitive credentials will be encrypted at rest.
+
+**Apply these architectural principles to the following comprehensive implementation plan:**
+---
+
+**Phase 1: Foundational Infrastructure & Database**
+
+1.  **Queue & Worker Setup:**
+    * Scaffold a new Node.js/TypeScript application within the monorepo at `apps/worker`. It should be configured to connect to Redis.
+    * Add `bullmq` and `redis` as dependencies to both `apps/api` and `apps/worker`.
+    * Implement a shared Redis connection utility in `packages/config` or a similar shared location.
+
+2.  **Secret Management & Security:**
+    * In `apps/api/.env`, add an `ENCRYPTION_KEY` with a securely generated 32-byte key for encrypting data at rest.
+    * The `GITHUB_PRIVATE_KEY` must be loaded securely, avoiding direct inclusion in code. For production, this would be injected via a secret manager (like Doppler or AWS Secrets Manager).
+
+3.  **Structured Logging:**
+    * Implement a shared, structured logger (e.g., using `pino`) in a shared package. All log entries in both the `api` and `worker` must include contextual information like `installationId`, `repositoryId`, and `jobId`.
+
+4.  **Update Database Schema for Resilience & Security:**
+    * In `prisma/schema.prisma`, update the models to support our robust architecture.
+
+    ```prisma
+    // prisma/schema.prisma
+    model User {
+      // ... same as before
+      installations Installation[]
+    }
+
+    model Installation {
+      id                   Int          @id
+      githubAccountId      Int          @unique
+      status               String       @default("active") // e.g., active, suspended
+      encryptedAccessToken String?      // Store encrypted tokens, never plaintext
+      user                 User         @relation(fields: [userId], references: [id])
+      userId               Int
+      repositories         Repository[]
+      createdAt            DateTime     @default(now())
+    }
+
+    model Repository {
+      id               Int          @id
+      name             String
+      fullName         String       @unique
+      private          Boolean
+      status           String       @default("syncing") // e.g., syncing, active, failed
+      installation     Installation @relation(fields: [installationId], references: [id])
+      installationId   Int
+      createdAt        DateTime     @default(now())
+    }
+    ```
+
+**Phase 2: Asynchronous Backend Implementation**
+
+5.  **Refactor API Webhook Endpoint (High Availability):**
+    * The webhook handler in `apps/api/src/routes/webhooks.routes.ts` must now be extremely lightweight.
+    * Its only tasks are:
+        1.  Verify the webhook signature immediately. Fail with `400 Bad Request` if invalid.
+        2.  Acknowledge the event by adding the validated payload to the BullMQ job queue.
+        3.  Instantly respond with a `202 Accepted` status code. **Do not await any processing.**
+
+6.  **Implement the Worker Service (`apps/worker`):**
+    * Create the main worker process file (`apps/worker/src/index.ts`).
+    * This process will listen for jobs on the queue (e.g., `github-webhook-events`).
+    * Create a job processor that handles different event types (`installation.created`, `installation_repositories.added`, etc.).
+    * **Implement Idempotency:** Before processing a job, check if the event has already been successfully processed to prevent duplicate data entries from webhook retries.
+    * **Implement Error Handling & Retries:** Configure the worker to automatically retry failed jobs with an exponential backoff strategy. After a set number of failures, move the job to a "dead-letter queue" for manual inspection.
+
+7.  **Create Abstracted Service Layers (`apps/api` and `apps/worker`):**
+    * Create a `github-app.service.ts` responsible for creating authenticated Octokit instances for installations.
+    * Create an `installation.service.ts` responsible for all database mutations related to installations and repositories. This service will contain the core "upsert" logic. It must encrypt the installation access token before saving it to the database.
+    * The worker's job processor will call these services.
+
+**Phase 3: Frontend Data Integration & User Experience**
+
+8.  **Update the Dashboard for Asynchronous States:**
+    * Modify the dashboard page (`apps/web/src/app/dashboard/page.tsx`) to handle the new `status` field on the `Repository` model.
+    * When `fetchRepositories` is called:
+        * If a repository's status is `"syncing"`, display it in the list but in a disabled or "pending" state, perhaps with a spinner. This provides immediate feedback to the user even if the background processing isn't complete.
+        * If the status is `"active"`, display it as a normal, interactive list item.
+        * If the status is `"failed"`, show an error icon and provide a way for the user to retry the sync.
+
+9.  **Implement Polling or WebSockets (Optional but Recommended):**
+    * To provide a seamless UX, the frontend should not require a manual refresh to see when a repository is done syncing.
+    * Implement a simple polling mechanism that re-fetches the repository list every few seconds if any repositories are in the `"syncing"` state. For a more advanced implementation, use WebSockets to push status updates from the backend to the frontend in real-time.
+
+**Final Architectural Review:**
+This design ensures your application is:
+* **Scalable:** The API can ingest a massive volume of webhooks without slowing down, and you can add more worker instances as load increases.
+* **Resilient:** Failures in processing a single webhook (due to GitHub API downtime or bugs) will not affect other users or bring down the main API. Jobs are retried automatically.
+* **Secure:** Sensitive tokens are encrypted at rest, and the webhook endpoint is hardened.
+* **Observable:** With structured logging and dead-letter queues, you have a clear view into the system's operations and a mechanism to debug failures.
