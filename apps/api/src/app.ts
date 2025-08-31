@@ -346,6 +346,24 @@ app.get("/api/v1/github/dashboard-stats", authMiddleware, async (req: any, res) 
   }
 });
 
+// GitHub App installation redirect endpoint
+app.get("/api/v1/github/installations/new", (req, res) => {
+  try {
+    // Hard-coded GitHub App name for security and reliability
+    const appName = 'mesrai-ai-review'; // Replace with your actual GitHub App name
+    const installationUrl = `https://github.com/apps/${appName}/installations/new`;
+    
+    // Perform server-side redirect to GitHub App installation page
+    res.redirect(installationUrl);
+  } catch (error) {
+    console.error('Error redirecting to GitHub App installation:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to redirect to GitHub App installation'
+    });
+  }
+});
+
 // Start review endpoint
 app.post("/api/v1/github/start-review", authMiddleware, async (req: any, res) => {
   try {

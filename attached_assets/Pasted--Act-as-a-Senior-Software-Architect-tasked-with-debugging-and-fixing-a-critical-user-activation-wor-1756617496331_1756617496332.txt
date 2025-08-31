@@ -1,0 +1,20 @@
+**Act as a Senior Software Architect tasked with debugging and fixing a critical user activation workflow.**
+
+**Primary Objective:**
+The GitHub App installation feature is failing. The button to install the app opens a blank popup, blocking the user from completing the setup. Your mission is to diagnose the root cause and implement a robust, seamless redirect flow that aligns with the professional standards of platforms like Coderabbit.
+
+**Phase 1: Diagnosis and Code Review**
+1.  **Analyze the Frontend Trigger:** Review the component that contains the "Install GitHub App" button. Verify the `onClick` handler or `href` it uses. Identify if it's using `window.open` or a simple anchor tag.
+2.  **Analyze the Backend Redirect:** Investigate the API endpoint that the frontend button calls. Examine how the redirect URL to GitHub is constructed. Verify that all required environment variables (like the `GITHUB_APP_ID` or App Name) are correctly loaded and used.
+
+**Phase 2: Implementation of the Fix**
+1.  **Refactor the Backend Redirect Logic:**
+    * Create or ensure there is a dedicated backend endpoint (e.g., `/api/v1/github/installations/new`).
+    * This endpoint's ONLY responsibility should be to perform a server-side redirect (`res.redirect()`) to the correct, static GitHub installation URL: `https://github.com/apps/your-app-name/installations/new`. Hard-code your app's name in the URL on the backend. This is more secure and reliable than constructing it on the client.
+2.  **Refactor the Frontend Button:**
+    * Modify the "Install GitHub App" button to be a simple HTML anchor tag (`<a>`) that links directly to your new backend endpoint (`/api/v1/github/installations/new`).
+    * **Remove any `window.open` JavaScript logic.** A standard browser redirect is more reliable and less likely to be blocked. This ensures a clean, predictable user experience.
+
+**Final Directives:**
+* The final implementation must result in a single-click action on the dashboard that reliably navigates the user to the official GitHub App installation page.
+* Ensure all related code adheres to our established monorepo structure and professional standards.
