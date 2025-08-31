@@ -105,6 +105,46 @@ export default function DashboardPage() {
   }
 
   if (error) {
+    // Check if it's an authentication error
+    if (error.includes('not authenticated') || error.includes('Authentication token required')) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6" data-testid="dashboard-login-required">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
+              <div className="mb-8">
+                <Github className="h-16 w-16 text-blue-500 mx-auto mb-4" />
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                  Welcome to Mesrai AI Review Tool
+                </h1>
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
+                  Connect your GitHub account to start automated code reviews
+                </p>
+              </div>
+
+              <Card className="p-6 max-w-md">
+                <CardContent className="p-0">
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Sign in with your GitHub account to access the dashboard and manage your repositories.
+                    </p>
+                    <Button 
+                      onClick={() => window.location.href = '/api/v1/auth/github'}
+                      className="w-full"
+                      size="lg"
+                      data-testid="button-github-login"
+                    >
+                      <Github className="h-5 w-5 mr-2" />
+                      Sign in with GitHub
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6" data-testid="dashboard-error">
         <div className="max-w-7xl mx-auto">
