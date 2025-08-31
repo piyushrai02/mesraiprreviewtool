@@ -11,13 +11,117 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  githubId  String   @unique
-  username  String
-  email     String?  @unique
-  avatarUrl String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            Int            @id @default(autoincrement())
+  githubId      String         @unique
+  username      String
+  email         String?        @unique
+  avatarUrl     String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relations
+  installations Installation[]
+  reviewSessions ReviewSession[]
 
   @@map("users")
+}
+
+model Installation {
+  id                    Int      @id @default(autoincrement())
+  githubInstallationId  Int      @unique
+  githubAccountId       Int
+  githubAccountType     String   // "Organization" or "User"
+  status                String   @default("active") // active, suspended, deleted
+  userId                Int?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  // Relations
+  user          User?        @relation(fields: [userId], references: [id])
+  repositories  Repository[]
+  
+  @@map("installations")
+}
+
+model Repository {
+  id             Int      @id @default(autoincrement())
+  githubId       Int      @unique
+  name           String
+  fullName       String   @unique
+  isPrivate      Boolean  @default(false)
+  language       String?
+  defaultBranch  String   @default("main")
+  status         String   @default("active") // active, inactive, failed
+  lastSyncAt     DateTime?
+  installationId Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  installation   Installation    @relation(fields: [installationId], references: [id])
+  reviewSessions ReviewSession[]
+  
+  @@map("repositories")
+}
+
+model ReviewSession {
+  id                Int      @id @default(autoincrement())
+  repositoryId      Int
+  pullRequestNumber Int
+  githubPrId        Int
+  status            String   @default("pending") // pending, analyzing, completed, failed
+  title             String?
+  author            String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  completedAt       DateTime?
+  userId            Int?
+  
+  // Analysis results
+  totalIssues       Int      @default(0)
+  criticalIssues    Int      @default(0)
+  suggestions       Int      @default(0)
+  
+  // Relations
+  repository     Repository      @relation(fields: [repositoryId], references: [id])
+  user          User?           @relation(fields: [userId], references: [id])
+  reviewComments ReviewComment[]
+  
+  @@unique([repositoryId, pullRequestNumber])
+  @@map("review_sessions")
+}
+
+model ReviewComment {
+  id              Int      @id @default(autoincrement())
+  reviewSessionId Int
+  type            String   // "suggestion", "issue", "security", "performance"
+  severity        String   // "info", "warning", "error", "critical"
+  title           String
+  description     String
+  filePath        String?
+  lineNumber      Int?
+  suggestion      String?
+  isCommittable   Boolean  @default(false)
+  status          String   @default("pending") // pending, accepted, rejected, applied
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  reviewSession ReviewSession @relation(fields: [reviewSessionId], references: [id])
+  
+  @@map("review_comments")
+}
+
+model WebhookEvent {
+  id                 Int      @id @default(autoincrement())
+  githubDeliveryId   String   @unique
+  eventType          String
+  action             String?
+  installationId     Int?
+  repositoryId       Int?
+  processed          Boolean  @default(false)
+  payload            Json
+  createdAt          DateTime @default(now())
+  
+  @@map("webhook_events")
 }

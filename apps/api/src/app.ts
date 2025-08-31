@@ -241,14 +241,14 @@ authRouter.post("/logout", (req, res) => {
 app.use("/api/v1/auth", authRouter);
 // app.use("/api/v1/github", githubRoutes);
 
-// TODO: Add webhook routes once Redis and worker dependencies are configured
+// TODO: Enable webhook routes once dependency issues are resolved
 // import webhookRoutes from './routes/webhooks.routes';
 // app.use("/api/v1/webhooks", webhookRoutes);
 
 // GitHub integration endpoints (dynamic database integration)
 app.get("/api/v1/github/repositories", authMiddleware, async (req: any, res) => {
   try {
-    const { RepositoryService } = await import('./services/repository.service.js');
+    const { RepositoryService } = await import('./services/repository.service');
     const repositoryService = new RepositoryService();
     
     // Fetch user's actual connected repositories from database
@@ -287,7 +287,7 @@ app.get("/api/v1/github/repositories", authMiddleware, async (req: any, res) => 
 
 app.get("/api/v1/github/reviews", authMiddleware, async (req: any, res) => {
   try {
-    const { RepositoryService } = await import('./services/repository.service.js');
+    const { RepositoryService } = await import('./services/repository.service');
     const repositoryService = new RepositoryService();
     
     // Fetch user's actual review sessions from database
@@ -326,7 +326,7 @@ app.get("/api/v1/github/reviews", authMiddleware, async (req: any, res) => {
 // GitHub dashboard statistics endpoint
 app.get("/api/v1/github/dashboard-stats", authMiddleware, async (req: any, res) => {
   try {
-    const { RepositoryService } = await import('./services/repository.service.js');
+    const { RepositoryService } = await import('./services/repository.service');
     const repositoryService = new RepositoryService();
     
     // Fetch user's actual repository statistics from database
