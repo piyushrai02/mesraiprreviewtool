@@ -1,0 +1,19 @@
+**Act as a Senior Software Architect specializing in debugging complex, event-driven systems.**
+
+**Primary Objective:**
+Diagnose and resolve a critical bug in our GitHub App integration. After a user successfully installs the app, our backend fails to update their status, causing the API to incorrectly report `isGithubAppInstalled: false`. Your task is to fix this data synchronization issue without disrupting any existing, working functionality.
+
+**Phase 1: Root Cause Analysis (Review First)**
+1.  **Investigate the Webhook Flow:** The primary suspect is the asynchronous processing of the `installation.created` webhook event. Thoroughly review the logic in both `apps/api` (for receiving the webhook) and `apps/worker` (for processing the job).
+2.  **Trace User-Installation Linkage:** The core of the problem is likely associating the stateless webhook event with the specific user who initiated the installation. Analyze the service layer to determine how the `installation` payload is currently being linked to a `User` record in the Prisma database.
+3.  **Verify Status Check Logic:** Review the API endpoint (e.g., `/api/v1/auth/me`) and its service. Confirm exactly how it queries the database to determine the `isGithubAppInstalled` boolean. Ensure this query is correct.
+
+**Phase 2: Implementation of the Fix**
+1.  **Correct the User-Installation Association:** Refactor the webhook processing service (`apps/worker`). Ensure that when an `installation.created` event is processed, you use the `installation.account.login` or `installation.sender.login` from the GitHub payload to find the corresponding `User` in our database via their `username` or `githubId`.
+2.  **Implement a Robust Database Update:** Once the user is identified, ensure the logic correctly creates the `Installation` record and links it to the `User` record via the relational field. This database transaction must be atomic and handle any potential errors gracefully.
+3.  **Add Defensive Logging:** Implement detailed, contextual logging throughout the entire webhook processing flow. Log the incoming installation ID, the identified username, the result of the database lookup, and the outcome of the final database write. This is critical for future debugging.
+
+**Final Directives:**
+* The solution must be a targeted fix to the data synchronization logic. Do not remove or alter unrelated functionality.
+* Ensure the fix is resilient and accounts for edge cases.
+* Upon completion, the user flow should be seamless: user installs the app, returns to the dashboard, and their status is immediately and correctly reflected.

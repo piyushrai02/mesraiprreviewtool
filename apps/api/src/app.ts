@@ -23,7 +23,7 @@ const getBaseUrl = () => {
   if (process.env.REPL_SLUG) {
     return `https://${process.env.REPL_SLUG}.replit.dev`;
   }
-  return process.env.CLIENT_URL || 'http://localhost:5000';
+  return process.env.CLIENT_URL || "http://localhost:5000";
 };
 
 const BASE_URL = getBaseUrl();
@@ -121,15 +121,11 @@ authRouter.get("/github/callback", async (req, res) => {
 
     if (error) {
       console.error("GitHub OAuth error:", error);
-      return res.redirect(
-        `${BASE_URL}/login?error=oauth_failed`,
-      );
+      return res.redirect(`${BASE_URL}/login?error=oauth_failed`);
     }
 
     if (!code || typeof code !== "string") {
-      return res.redirect(
-        `${BASE_URL}/login?error=missing_code`,
-      );
+      return res.redirect(`${BASE_URL}/login?error=missing_code`);
     }
 
     // Exchange code for access token
@@ -194,18 +190,20 @@ authRouter.get("/me", authMiddleware, async (req: any, res) => {
     // Check if user has active GitHub App installations
     let isGitHubAppInstalled = false;
     try {
-        // Query installations directly to avoid import issues
-      const installationResult = await prisma.$queryRaw<Array<{count: bigint}>>`
+      // Query installations directly to avoid import issues
+      const installationResult = await prisma.$queryRaw<
+        Array<{ count: bigint }>
+      >`
         SELECT COUNT(*) as count 
         FROM installations 
         WHERE "userId" = ${user.id} AND status = 'active'
       `;
-      
+
       const count = Number(installationResult[0]?.count || 0);
       isGitHubAppInstalled = count > 0;
       console.log(`User ${user.id} has ${count} active installations`);
     } catch (serviceError) {
-      console.warn('Could not check installation status:', serviceError);
+      console.warn("Could not check installation status:", serviceError);
       // Default to false if service is unavailable
       isGitHubAppInstalled = false;
     }
@@ -250,35 +248,42 @@ app.use("/api/v1/auth", authRouter);
 // GitHub webhook endpoint for installation events
 app.post("/api/v1/webhooks/github", async (req, res) => {
   try {
-    const event = req.headers['x-github-event'];
-    const signature = req.headers['x-hub-signature-256'];
+    const event = req.headers["x-github-event"];
+    const signature = req.headers["x-hub-signature-256"];
     const payload = req.body;
 
-    console.log(`GitHub webhook received: ${event}`, payload);
+    console.log(`🔥 GitHub webhook received: ${event}`, {
+      action: payload.action,
+      installationId: payload.installation?.id,
+      accountId: payload.installation?.account?.id,
+      accountType: payload.installation?.account?.type,
+      senderId: payload.sender?.id
+    });
 
     // Handle installation events
-    if (event === 'installation' || event === 'installation_repositories') {
+    if (event === "installation") {
       const { action, installation, sender } = payload;
-      
-      if (action === 'created' || action === 'added') {
-        // Find the user by GitHub ID
-        // Query users table directly with raw SQL
-        const githubUsers = await prisma.$queryRaw<Array<{id: number, githubId: string}>>`
-          SELECT id, "githubId" FROM users WHERE "githubId" = ${sender.id.toString()}
-        `;
-        const githubUser = githubUsers[0];
 
-        if (githubUser) {
-          // Create installation record directly
+      if (action === "created") {
+        console.log(`🚀 Processing installation.created for installation ${installation.id}`);
+        
+        // Create installation record without user link (will be linked via callback)
+        const existingInstallation = await prisma.installation.findFirst({
+          where: { githubInstallationId: installation.id }
+        });
+
+        if (!existingInstallation) {
           const createdInstallation = await prisma.installation.create({
             data: {
               githubInstallationId: installation.id,
               githubAccountId: installation.account.id,
               githubAccountType: installation.account.type,
-              userId: githubUser.id,
-              status: 'active'
-            }
+              userId: null, // Will be linked via callback endpoint
+              status: "pending_user_link",
+            },
           });
+
+          console.log(`✅ Installation ${installation.id} created with pending status`);
 
           // Create repository records
           const repositories = payload.repositories || [];
@@ -290,191 +295,244 @@ app.post("/api/v1/webhooks/github", async (req, res) => {
                 fullName: repo.full_name,
                 isPrivate: repo.private,
                 language: repo.language,
-                defaultBranch: repo.default_branch || 'main',
+                defaultBranch: repo.default_branch || "main",
                 installationId: createdInstallation.id,
-                status: 'active'
-              }
+                status: "active",
+              },
             });
           }
 
-          console.log(`Installation created for user ${githubUser.id} with ${repositories.length} repositories`);
+          console.log(`📁 Created ${repositories.length} repository records for installation ${installation.id}`);
         } else {
-          console.warn('Could not find user for GitHub ID:', sender.id);
+          console.log(`⚠️ Installation ${installation.id} already exists`);
         }
-      } else if (action === 'deleted') {
+      } else if (action === "deleted") {
+        console.log(`🗑️ Processing installation.deleted for installation ${installation.id}`);
+        
         // Handle installation deletion
         await prisma.$executeRaw`
           UPDATE installations 
           SET status = 'deleted', "updatedAt" = NOW()
           WHERE "githubInstallationId" = ${installation.id}
         `;
-        console.log(`Installation ${installation.id} marked as deleted`);
+        console.log(`❌ Installation ${installation.id} marked as deleted`);
       }
     }
 
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error('Webhook error:', error);
+    console.error("🔴 Webhook processing error:", error);
     res.status(500).json({ success: false, error: String(error) });
   }
 });
 
 // GitHub installation callback endpoint - called after user installs GitHub App
-app.get("/api/v1/github/installation/callback", authMiddleware, async (req: any, res) => {
-  try {
-    const { installation_id, setup_action } = req.query;
-    
-    console.log(`Installation callback received:`, { installation_id, setup_action, userId: req.userId });
-    
-    if (setup_action === 'install' && installation_id) {
-      // Link the installation to the current user
-      console.log(`Linking installation ${installation_id} to user ${req.userId}`);
-      
-      // Update installation with user ID
-      const updateResult = await prisma.installation.updateMany({
-        where: {
-          githubInstallationId: parseInt(installation_id.toString()),
-          userId: null
-        },
-        data: {
-          userId: req.userId
-        }
+app.get(
+  "/api/v1/github/installation/callback",
+  authMiddleware,
+  async (req: any, res) => {
+    try {
+      const { installation_id, setup_action, state } = req.query;
+
+      console.log(`🔗 Installation callback received:`, {
+        installation_id,
+        setup_action,
+        state,
+        authenticatedUserId: req.userId,
       });
-      
-      console.log(`Installation ${installation_id} linked to user ${req.userId}. Updated ${updateResult.count} records.`);
-      
-      // If no existing installation was found, create a new one
-      if (updateResult.count === 0) {
-        console.log(`No existing installation found, creating new record for installation ${installation_id}`);
-        await prisma.installation.create({
+
+      if (setup_action === "install" && installation_id) {
+        const installationIdNum = parseInt(installation_id.toString());
+        
+        console.log(`🔍 Looking for installation ${installationIdNum} to link to user ${req.userId}`);
+
+        // First, try to update existing pending installation
+        const updateResult = await prisma.installation.updateMany({
+          where: {
+            githubInstallationId: installationIdNum,
+            OR: [
+              { userId: null },
+              { status: "pending_user_link" }
+            ]
+          },
           data: {
-            githubInstallationId: parseInt(installation_id.toString()),
-            githubAccountId: 0, // Will be updated by webhook
-            githubAccountType: 'User',
-            status: 'active',
-            userId: req.userId
+            userId: req.userId,
+            status: "active",
+            updatedAt: new Date()
+          },
+        });
+
+        console.log(`🔗 Update result: ${updateResult.count} installations linked`);
+
+        // If no existing installation was found, create a new one
+        if (updateResult.count === 0) {
+          console.log(`🆕 No existing installation found, creating new record`);
+          
+          try {
+            const newInstallation = await prisma.installation.create({
+              data: {
+                githubInstallationId: installationIdNum,
+                githubAccountId: req.userId, // Use authenticated user ID as fallback
+                githubAccountType: "User",
+                status: "active",
+                userId: req.userId,
+              },
+            });
+            console.log(`✅ Created new installation record with ID ${newInstallation.id}`);
+          } catch (createError) {
+            console.error(`❌ Failed to create installation:`, createError);
+          }
+        }
+
+        // Verify the installation is properly linked
+        const finalInstallation = await prisma.installation.findFirst({
+          where: {
+            githubInstallationId: installationIdNum,
+            userId: req.userId,
+            status: "active"
           }
         });
-      }
-    }
-    
-    // Redirect back to dashboard
-    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-    res.redirect(`${baseUrl}/dashboard?installed=true`);
-  } catch (error) {
-    console.error('Error processing installation callback:', error);
-    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-    res.redirect(`${baseUrl}/dashboard?error=installation_failed`);
-  }
-});
 
-// GitHub App installation URL endpoint  
-app.get("/api/v1/github/installations/new", authMiddleware, async (req: any, res) => {
-  try {
-    const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-    const githubAppId = process.env.GITHUB_APP_ID;
-    
-    if (!githubAppId) {
-      return res.status(500).json({
+        if (finalInstallation) {
+          console.log(`🎉 Installation ${installationIdNum} successfully linked to user ${req.userId}`);
+        } else {
+          console.error(`❌ Failed to verify installation linkage for ${installationIdNum}`);
+        }
+      }
+
+      // Redirect back to dashboard
+      const baseUrl = process.env.BASE_URL || "http://localhost:5000";
+      res.redirect(`${baseUrl}/dashboard?installed=true`);
+    } catch (error) {
+      console.error("🔴 Error processing installation callback:", error);
+      const baseUrl = process.env.BASE_URL || "http://localhost:5000";
+      res.redirect(`${baseUrl}/dashboard?error=installation_failed`);
+    }
+  },
+);
+
+// GitHub App installation URL endpoint
+app.get(
+  "/api/v1/github/installations/new",
+  authMiddleware,
+  async (req: any, res) => {
+    try {
+      const baseUrl = process.env.BASE_URL || "http://localhost:5000";
+      const githubAppId = process.env.GITHUB_APP_ID;
+
+      if (!githubAppId) {
+        return res.status(500).json({
+          success: false,
+          message: "GitHub App ID not configured",
+        });
+      }
+
+      // GitHub App installation URL with callback redirect
+      const callbackUrl = `${baseUrl}/api/v1/github/installation/callback`;
+      const installationUrl = `https://github.com/apps/mesrai-ai-review-tool/installations/new?state=${req.userId}&redirect_uri=${encodeURIComponent(callbackUrl)}`;
+
+      console.log(
+        `Generated installation URL for user ${req.userId}:`,
+        installationUrl,
+      );
+
+      res.json({
+        success: true,
+        data: {
+          installationUrl,
+        },
+      });
+    } catch (error) {
+      console.error("Error generating installation URL:", error);
+      res.status(500).json({
         success: false,
-        message: 'GitHub App ID not configured'
+        message: "Failed to generate installation URL",
       });
     }
-    
-    // GitHub App installation URL with callback redirect
-    const callbackUrl = `${baseUrl}/api/v1/github/installation/callback`;
-    const installationUrl = `https://github.com/apps/mesrai-ai/installations/new?state=${req.userId}&redirect_uri=${encodeURIComponent(callbackUrl)}`;
-    
-    console.log(`Generated installation URL for user ${req.userId}:`, installationUrl);
-    
-    res.json({
-      success: true,
-      data: {
-        installationUrl
-      }
-    });
-  } catch (error) {
-    console.error('Error generating installation URL:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to generate installation URL'
-    });
-  }
-});
+  },
+);
 
 // GitHub integration endpoints (dynamic database integration)
-app.get("/api/v1/github/repositories", authMiddleware, async (req: any, res) => {
-  try {
-    // Query repositories directly to avoid import issues
-    const repositories = await prisma.$queryRaw<Array<{
-      id: number;
-      githubId: number;
-      name: string;
-      fullName: string;
-      isPrivate: boolean;
-      language: string | null;
-      defaultBranch: string;
-      status: string;
-      lastSyncAt: Date | null;
-      createdAt: Date;
-      updatedAt: Date;
-      installationId: number;
-    }>>`
+app.get(
+  "/api/v1/github/repositories",
+  authMiddleware,
+  async (req: any, res) => {
+    try {
+      // Query repositories directly to avoid import issues
+      const repositories = await prisma.$queryRaw<
+        Array<{
+          id: number;
+          githubId: number;
+          name: string;
+          fullName: string;
+          isPrivate: boolean;
+          language: string | null;
+          defaultBranch: string;
+          status: string;
+          lastSyncAt: Date | null;
+          createdAt: Date;
+          updatedAt: Date;
+          installationId: number;
+        }>
+      >`
       SELECT r.* 
       FROM repositories r
       INNER JOIN installations i ON r."installationId" = i.id
       WHERE i."userId" = ${req.userId} AND i.status = 'active' AND r.status = 'active'
       ORDER BY r."updatedAt" DESC
     `;
-    
-    // Transform to frontend format
-    const formattedRepositories = repositories.map((repo) => ({
-      id: repo.id.toString(),
-      githubId: repo.githubId,
-      name: repo.name,
-      fullName: repo.fullName,
-      owner: repo.fullName.split('/')[0],
-      isPrivate: repo.isPrivate,
-      installationId: repo.installationId,
-      language: repo.language,
-      defaultBranch: repo.defaultBranch,
-      isActive: repo.status === 'active',
-      lastSyncAt: repo.lastSyncAt?.toISOString(),
-      createdAt: repo.createdAt?.toISOString(),
-      updatedAt: repo.updatedAt?.toISOString(),
-    }));
-    
-    res.json({
-      success: true,
-      data: formattedRepositories,
-      message: 'Repositories fetched successfully'
-    });
-  } catch (error: any) {
-    console.error('Error fetching repositories:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch repositories'
-    });
-  }
-});
+
+      // Transform to frontend format
+      const formattedRepositories = repositories.map((repo) => ({
+        id: repo.id.toString(),
+        githubId: repo.githubId,
+        name: repo.name,
+        fullName: repo.fullName,
+        owner: repo.fullName.split("/")[0],
+        isPrivate: repo.isPrivate,
+        installationId: repo.installationId,
+        language: repo.language,
+        defaultBranch: repo.defaultBranch,
+        isActive: repo.status === "active",
+        lastSyncAt: repo.lastSyncAt?.toISOString(),
+        createdAt: repo.createdAt?.toISOString(),
+        updatedAt: repo.updatedAt?.toISOString(),
+      }));
+
+      res.json({
+        success: true,
+        data: formattedRepositories,
+        message: "Repositories fetched successfully",
+      });
+    } catch (error: any) {
+      console.error("Error fetching repositories:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch repositories",
+      });
+    }
+  },
+);
 
 app.get("/api/v1/github/reviews", authMiddleware, async (req: any, res) => {
   try {
     // Query reviews directly to avoid import issues
-    const reviews = await prisma.$queryRaw<Array<{
-      id: number;
-      repositoryId: number;
-      pullRequestNumber: number;
-      githubPrId: number;
-      status: string;
-      title: string | null;
-      author: string | null;
-      createdAt: Date;
-      updatedAt: Date;
-      completedAt: Date | null;
-      repositoryName: string;
-      repositoryFullName: string;
-    }>>`
+    const reviews = await prisma.$queryRaw<
+      Array<{
+        id: number;
+        repositoryId: number;
+        pullRequestNumber: number;
+        githubPrId: number;
+        status: string;
+        title: string | null;
+        author: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        completedAt: Date | null;
+        repositoryName: string;
+        repositoryFullName: string;
+      }>
+    >`
       SELECT rs.*, r.name as "repositoryName", r."fullName" as "repositoryFullName"
       FROM review_sessions rs
       INNER JOIN repositories r ON rs."repositoryId" = r.id
@@ -483,7 +541,7 @@ app.get("/api/v1/github/reviews", authMiddleware, async (req: any, res) => {
       ORDER BY rs."createdAt" DESC
       LIMIT 50
     `;
-    
+
     // Transform to frontend format
     const formattedReviews = reviews.map((review) => ({
       id: review.id,
@@ -503,27 +561,32 @@ app.get("/api/v1/github/reviews", authMiddleware, async (req: any, res) => {
     res.json({
       success: true,
       data: formattedReviews,
-      message: 'Reviews fetched successfully'
+      message: "Reviews fetched successfully",
     });
   } catch (error: any) {
-    console.error('Error fetching reviews:', error);
+    console.error("Error fetching reviews:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch reviews'
+      message: "Failed to fetch reviews",
     });
   }
 });
 
 // GitHub dashboard statistics endpoint
-app.get("/api/v1/github/dashboard-stats", authMiddleware, async (req: any, res) => {
-  try {
-    // Query stats directly to avoid import issues
-    const stats = await prisma.$queryRaw<Array<{
-      totalRepositories: bigint;
-      totalInstallations: bigint;
-      activeReviews: bigint;
-      completedReviews: bigint;
-    }>>`
+app.get(
+  "/api/v1/github/dashboard-stats",
+  authMiddleware,
+  async (req: any, res) => {
+    try {
+      // Query stats directly to avoid import issues
+      const stats = await prisma.$queryRaw<
+        Array<{
+          totalRepositories: bigint;
+          totalInstallations: bigint;
+          activeReviews: bigint;
+          completedReviews: bigint;
+        }>
+      >`
       SELECT 
         COUNT(DISTINCT r.id) as "totalRepositories",
         COUNT(DISTINCT i.id) as "totalInstallations",
@@ -535,33 +598,34 @@ app.get("/api/v1/github/dashboard-stats", authMiddleware, async (req: any, res) 
       WHERE i."userId" = ${req.userId} AND i.status = 'active'
     `;
 
-    const result = stats[0] || {
-      totalRepositories: BigInt(0),
-      totalInstallations: BigInt(0),
-      activeReviews: BigInt(0),
-      completedReviews: BigInt(0)
-    };
+      const result = stats[0] || {
+        totalRepositories: BigInt(0),
+        totalInstallations: BigInt(0),
+        activeReviews: BigInt(0),
+        completedReviews: BigInt(0),
+      };
 
-    const formattedStats = {
-      totalRepositories: Number(result.totalRepositories),
-      totalInstallations: Number(result.totalInstallations),
-      activeReviews: Number(result.activeReviews),
-      completedReviews: Number(result.completedReviews)
-    };
+      const formattedStats = {
+        totalRepositories: Number(result.totalRepositories),
+        totalInstallations: Number(result.totalInstallations),
+        activeReviews: Number(result.activeReviews),
+        completedReviews: Number(result.completedReviews),
+      };
 
-    res.json({
-      success: true,
-      data: formattedStats,
-      message: 'Dashboard statistics fetched successfully'
-    });
-  } catch (error: any) {
-    console.error('Error fetching dashboard stats:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch dashboard statistics'
-    });
-  }
-});
+      res.json({
+        success: true,
+        data: formattedStats,
+        message: "Dashboard statistics fetched successfully",
+      });
+    } catch (error: any) {
+      console.error("Error fetching dashboard stats:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch dashboard statistics",
+      });
+    }
+  },
+);
 
 // GitHub App installation redirect endpoint
 app.get("/api/v1/github/installations/new", authMiddleware, (req: any, res) => {
@@ -569,28 +633,30 @@ app.get("/api/v1/github/installations/new", authMiddleware, (req: any, res) => {
     if (!process.env.GITHUB_APP_ID) {
       return res.status(500).json({
         success: false,
-        message: 'GitHub App not configured'
+        message: "GitHub App not configured",
       });
     }
 
     // Create installation URL with state parameter for security
-    const state = Buffer.from(JSON.stringify({ 
-      userId: req.userId, 
-      timestamp: Date.now() 
-    })).toString('base64');
-    
-    const installationUrl = `https://github.com/apps/${process.env.GITHUB_APP_NAME || 'mesrai-ai-review'}/installations/new?state=${state}`;
-    
+    const state = Buffer.from(
+      JSON.stringify({
+        userId: req.userId,
+        timestamp: Date.now(),
+      }),
+    ).toString("base64");
+
+    const installationUrl = `https://github.com/apps/${process.env.GITHUB_APP_NAME || "mesrai-ai-review-tool"}/installations/new?state=${state}`;
+
     res.json({
       success: true,
       data: { installationUrl },
-      message: 'Installation URL generated'
+      message: "Installation URL generated",
     });
   } catch (error) {
-    console.error('Error generating GitHub App installation URL:', error);
+    console.error("Error generating GitHub App installation URL:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to generate installation URL'
+      message: "Failed to generate installation URL",
     });
   }
 });
@@ -599,8 +665,8 @@ app.get("/api/v1/github/installations/new", authMiddleware, (req: any, res) => {
 app.get("/api/v1/github/installations/callback", async (req: any, res) => {
   try {
     const { installation_id, setup_action, state } = req.query;
-    
-    if (setup_action !== 'install' && setup_action !== 'update') {
+
+    if (setup_action !== "install" && setup_action !== "update") {
       return res.redirect(`${BASE_URL}?error=installation_cancelled`);
     }
 
@@ -611,142 +677,233 @@ app.get("/api/v1/github/installations/callback", async (req: any, res) => {
     // Decode and verify state parameter
     let userId;
     try {
-      const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
+      const stateData = JSON.parse(Buffer.from(state, "base64").toString());
       userId = stateData.userId;
-      
+
       // Verify timestamp is recent (within 10 minutes)
       if (Date.now() - stateData.timestamp > 10 * 60 * 1000) {
-        throw new Error('State expired');
+        throw new Error("State expired");
       }
     } catch (error) {
-      console.error('Invalid state parameter:', error);
+      console.error("Invalid state parameter:", error);
       return res.redirect(`${BASE_URL}?error=invalid_state`);
     }
 
     // Create installation record immediately upon callback
     try {
-      const { RepositoryService } = await import('./services/repository.service');
+      const { RepositoryService } = await import(
+        "./services/repository.service"
+      );
       const repositoryService = new RepositoryService();
-      
+
       await repositoryService.createInstallation({
         githubInstallationId: parseInt(installation_id),
         githubAccountId: userId, // Using userId as account ID for now
-        githubAccountType: 'User',
-        userId: userId
+        githubAccountType: "User",
+        userId: userId,
       });
-      
+
       console.log(`Installation ${installation_id} created for user ${userId}`);
     } catch (installError) {
-      console.error('Error creating installation record:', installError);
+      console.error("Error creating installation record:", installError);
     }
-    
-    res.redirect(`${BASE_URL}?installation_success=true&installation_id=${installation_id}`);
+
+    res.redirect(
+      `${BASE_URL}?installation_success=true&installation_id=${installation_id}`,
+    );
   } catch (error) {
-    console.error('Error handling GitHub App installation callback:', error);
+    console.error("Error handling GitHub App installation callback:", error);
     res.redirect(`${BASE_URL}?error=installation_failed`);
   }
 });
 
 // Manual installation endpoint for testing/debugging
-app.post("/api/v1/github/installations/manual", authMiddleware, async (req: any, res) => {
-  try {
-    const { githubInstallationId } = req.body;
-    
-    if (!githubInstallationId) {
-      return res.status(400).json({
+app.post(
+  "/api/v1/github/installations/manual",
+  authMiddleware,
+  async (req: any, res) => {
+    try {
+      const { githubInstallationId } = req.body;
+
+      if (!githubInstallationId) {
+        return res.status(400).json({
+          success: false,
+          message: "GitHub installation ID is required",
+        });
+      }
+
+      const { RepositoryService } = await import(
+        "./services/repository.service"
+      );
+      const repositoryService = new RepositoryService();
+
+      // Create installation record manually
+      const installation = await repositoryService.createInstallation({
+        githubInstallationId: parseInt(githubInstallationId),
+        githubAccountId: req.userId,
+        githubAccountType: "User",
+        userId: req.userId,
+      });
+
+      res.json({
+        success: true,
+        data: installation,
+        message: "Installation created successfully",
+      });
+    } catch (error) {
+      console.error("Error creating manual installation:", error);
+      res.status(500).json({
         success: false,
-        message: 'GitHub installation ID is required'
+        message: "Failed to create installation",
       });
     }
-
-    const { RepositoryService } = await import('./services/repository.service');
-    const repositoryService = new RepositoryService();
-    
-    // Create installation record manually
-    const installation = await repositoryService.createInstallation({
-      githubInstallationId: parseInt(githubInstallationId),
-      githubAccountId: req.userId,
-      githubAccountType: 'User',
-      userId: req.userId
-    });
-    
-    res.json({
-      success: true,
-      data: installation,
-      message: 'Installation created successfully'
-    });
-  } catch (error) {
-    console.error('Error creating manual installation:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create installation'
-    });
-  }
-});
+  },
+);
 
 // Check installation status
-app.get("/api/v1/github/installations/status", authMiddleware, async (req: any, res) => {
-  try {
-    const { RepositoryService } = await import('./services/repository.service');
-    const repositoryService = new RepositoryService();
-    
-    const hasInstallations = await repositoryService.hasActiveInstallations(req.userId);
-    
-    res.json({
-      success: true,
-      data: { 
-        hasInstallations,
-        installationCount: hasInstallations ? 1 : 0 // Simplified for now
-      },
-      message: 'Installation status retrieved'
-    });
-  } catch (error) {
-    console.error('Error checking installation status:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to check installation status'
-    });
-  }
-});
+app.get(
+  "/api/v1/github/installations/status",
+  authMiddleware,
+  async (req: any, res) => {
+    try {
+      const { RepositoryService } = await import(
+        "./services/repository.service"
+      );
+      const repositoryService = new RepositoryService();
 
-// Start review endpoint
-app.post("/api/v1/github/start-review", authMiddleware, async (req: any, res) => {
-  try {
-    const { repositoryId, pullRequestNumber } = req.body;
-    
-    if (!repositoryId) {
-      return res.status(400).json({
+      const hasInstallations = await repositoryService.hasActiveInstallations(
+        req.userId,
+      );
+
+      res.json({
+        success: true,
+        data: {
+          hasInstallations,
+          installationCount: hasInstallations ? 1 : 0, // Simplified for now
+        },
+        message: "Installation status retrieved",
+      });
+    } catch (error) {
+      console.error("Error checking installation status:", error);
+      res.status(500).json({
         success: false,
-        message: 'Repository ID is required'
+        message: "Failed to check installation status",
       });
     }
+  },
+);
 
-    // For now, create a mock review session
-    // In production, this would trigger the actual review workflow
-    const reviewSession = {
-      id: `review-${Date.now()}`,
-      repositoryId,
-      pullRequestNumber: pullRequestNumber || 1,
-      githubPrId: Math.floor(Math.random() * 10000),
-      status: 'queued',
-      title: `AI Review for PR #${pullRequestNumber || 1}`,
-      author: 'user',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      completedAt: null,
+// Start review endpoint
+app.post(
+  "/api/v1/github/start-review",
+  authMiddleware,
+  async (req: any, res) => {
+    try {
+      const { repositoryId, pullRequestNumber } = req.body;
+
+      if (!repositoryId) {
+        return res.status(400).json({
+          success: false,
+          message: "Repository ID is required",
+        });
+      }
+
+      // For now, create a mock review session
+      // In production, this would trigger the actual review workflow
+      const reviewSession = {
+        id: `review-${Date.now()}`,
+        repositoryId,
+        pullRequestNumber: pullRequestNumber || 1,
+        githubPrId: Math.floor(Math.random() * 10000),
+        status: "queued",
+        title: `AI Review for PR #${pullRequestNumber || 1}`,
+        author: "user",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        completedAt: null,
+      };
+
+      res.json({
+        success: true,
+        data: reviewSession,
+        message: "Review started successfully",
+      });
+    } catch (error: any) {
+      console.error("Error starting review:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to start review",
+      });
+    }
+  },
+);
+
+// Test endpoint to simulate GitHub App installation for debugging
+app.post("/api/v1/github/test-installation", authMiddleware, async (req: any, res) => {
+  try {
+    const { installationId = 123456 } = req.body;
+    
+    console.log(`🧪 Testing installation flow for user ${req.userId} with installation ${installationId}`);
+    
+    // Step 1: Simulate webhook creating pending installation
+    const existingInstallation = await prisma.installation.findFirst({
+      where: { githubInstallationId: installationId }
+    });
+
+    if (!existingInstallation) {
+      const createdInstallation = await prisma.installation.create({
+        data: {
+          githubInstallationId: installationId,
+          githubAccountId: req.userId,
+          githubAccountType: "User",
+          userId: null, // Pending linkage
+          status: "pending_user_link",
+        },
+      });
+      console.log(`📋 Created pending installation ${createdInstallation.id}`);
+    }
+    
+    // Step 2: Simulate callback linking
+    const updateResult = await prisma.installation.updateMany({
+      where: {
+        githubInstallationId: installationId,
+        OR: [
+          { userId: null },
+          { status: "pending_user_link" }
+        ]
+      },
+      data: {
+        userId: req.userId,
+        status: "active",
+        updatedAt: new Date()
+      },
+    });
+    
+    console.log(`🔗 Linked ${updateResult.count} installations to user ${req.userId}`);
+    
+    // Step 3: Verify the final state
+    const finalInstallation = await prisma.installation.findFirst({
+      where: {
+        githubInstallationId: installationId,
+        userId: req.userId,
+        status: "active"
+      }
+    });
+    
+    const result = {
+      success: !!finalInstallation,
+      installationId,
+      userId: req.userId,
+      linked: !!finalInstallation,
+      installationRecord: finalInstallation
     };
-
-    res.json({
-      success: true,
-      data: reviewSession,
-      message: 'Review started successfully'
-    });
-  } catch (error: any) {
-    console.error('Error starting review:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to start review'
-    });
+    
+    console.log(`🎯 Test result:`, result);
+    
+    res.json(result);
+  } catch (error) {
+    console.error("🔴 Test installation error:", error);
+    res.status(500).json({ success: false, error: String(error) });
   }
 });
 
